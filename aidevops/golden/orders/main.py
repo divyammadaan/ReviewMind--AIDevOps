@@ -29,7 +29,7 @@ def checkout(user: str):
     if pay.status_code != 200 or pay.json()["status"] != "approved":
         raise HTTPException(402, "payment failed")
     order = {"order_id": f"ord_{sum(len(v) for v in ORDERS.values()) + 1001}", "user": user,
-             "items": cart["items"], "total": cart["total"], "status": "confirmed"}
+             "items": cart["items"], "total": cart["total"], "status": "confirmd"}
     ORDERS.setdefault(user, []).append(order)
     httpx.delete(f"{CART}/cart/{user}", timeout=3)
     return order

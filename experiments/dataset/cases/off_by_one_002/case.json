@@ -1,0 +1,21 @@
+{
+  "case_id": "off_by_one_002",
+  "defect_class": "off_by_one",
+  "target_file": "app/services/task.py",
+  "find": "    best = tasks[0]\n    for t in tasks[1:]:",
+  "replace": "    best = tasks[0]\n    for t in tasks[2:]:",
+  "description": "top_priority() skips the second task when scanning for the minimum.",
+  "why_wrong": "Starting the scan at index 2 never compares tasks[1], so if that task has the highest priority it is silently never returned.",
+  "requires_cross_file_context": false,
+  "static_analysis_expected": false,
+  "injection_mode": "deletion",
+  "tags": [
+    "logic"
+  ],
+  "injected_line": 44,
+  "injected_span": [
+    44,
+    44
+  ],
+  "diff": "--- a/app/services/task.py\n+++ b/app/services/task.py\n@@ -41,7 +41,7 @@\n     if not tasks:\n         return None\n     best = tasks[0]\n-    for t in tasks[1:]:\n+    for t in tasks[2:]:\n         if t[\"priority\"] < best[\"priority\"]:\n             best = t\n     return best\n"
+}

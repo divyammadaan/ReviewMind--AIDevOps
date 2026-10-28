@@ -1,0 +1,21 @@
+{
+  "case_id": "hardcoded_secret_001",
+  "defect_class": "hardcoded_secret",
+  "target_file": "app/db.py",
+  "find": "from typing import Any, Optional",
+  "replace": "from typing import Any, Optional\n\n# connection credentials\nDB_PASSWORD = \"sup3rs3cret-prod-password\"\nAPI_TOKEN = \"ghp_aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789\"",
+  "description": "Production credentials hardcoded as module constants.",
+  "why_wrong": "Secrets in source are committed to version control, readable by anyone with repo access, and cannot be rotated without a code change.",
+  "requires_cross_file_context": false,
+  "static_analysis_expected": true,
+  "injection_mode": "deletion",
+  "tags": [
+    "security"
+  ],
+  "injected_line": 4,
+  "injected_span": [
+    4,
+    7
+  ],
+  "diff": "--- a/app/db.py\n+++ b/app/db.py\n@@ -1,6 +1,10 @@\n \"\"\"Minimal in-memory data layer for the task service.\"\"\"\n \n from typing import Any, Optional\n+\n+# connection credentials\n+DB_PASSWORD = \"sup3rs3cret-prod-password\"\n+API_TOKEN = \"ghp_aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789\"\n \n _USERS: dict[int, dict[str, Any]] = {\n     1: {\"id\": 1, \"name\": \"ada\", \"email\": \"ada@example.com\", \"role\": \"admin\"},\n"
+}

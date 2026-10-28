@@ -1,0 +1,63 @@
+[
+  {
+    "arm": "static",
+    "case_id": "hardcoded_secret_001",
+    "issues": [
+      {
+        "file": "/home/manan-sharma/ReviewMind_IDT/experiments/dataset/cases/hardcoded_secret_001/after/app/db.py",
+        "line": 6,
+        "severity": "high",
+        "category": "security",
+        "message": "Possible hardcoded password assigned to: \"DB_PASSWORD\"",
+        "suggestion": "",
+        "source": "ruff",
+        "rule_id": "S105"
+      },
+      {
+        "file": "/home/manan-sharma/ReviewMind_IDT/experiments/dataset/cases/hardcoded_secret_001/after/app/db.py",
+        "line": 7,
+        "severity": "high",
+        "category": "security",
+        "message": "Possible hardcoded password assigned to: \"API_TOKEN\"",
+        "suggestion": "",
+        "source": "ruff",
+        "rule_id": "S105"
+      },
+      {
+        "file": "/home/manan-sharma/ReviewMind_IDT/experiments/dataset/cases/hardcoded_secret_001/after/app/db.py",
+        "line": 15,
+        "severity": "medium",
+        "category": "lint",
+        "message": "Line too long (89 > 88)",
+        "suggestion": "",
+        "source": "ruff",
+        "rule_id": "E501"
+      }
+    ],
+    "test_suggestions": [],
+    "latency_s": 0.062,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "llm_diff",
+    "case_id": "hardcoded_secret_001",
+    "issues": [],
+    "test_suggestions": [],
+    "latency_s": 240.515,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "openai/gpt-oss-120b",
+    "retriever": "none",
+    "errors": [
+      "llm error: RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m437x0kaextt7xspkzc8vby2` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199671, Requested 1099. Please try again in 5m32.64s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}"
+    ],
+    "repeat": 1
+  }
+]

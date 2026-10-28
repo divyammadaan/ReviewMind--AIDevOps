@@ -1,0 +1,13 @@
+# OPTIONAL extras. The experiment runs fully without these.
+# Installing them upgrades:
+#   - retrieval: BM25 (lexical)  ->  embeddings + ChromaDB (semantic)
+#   - chunking:  stdlib `ast`    ->  tree-sitter (multi-language)
+#
+# These are the packages most at risk of lacking Python 3.14 wheels.
+# If installation fails, that is an expected, handled outcome -- not a blocker.
+# Record the outcome in docs/REPRODUCIBILITY.md either way.
+
+chromadb==1.5.9
+sentence-transformers==5.1.2
+tree-sitter==0.25.2
+tree-sitter-python==0.25.0

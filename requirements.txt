@@ -1,0 +1,22 @@
+# ReviewMind — pinned for reproducibility (A2 criterion: Methodology & Reproducibility)
+# Install:  .venv/bin/pip install -r requirements.txt
+#
+# Tier 1 — REQUIRED. The experiment cannot run without these.
+#          All are pure-Python or have broad wheel coverage.
+python-dotenv==1.1.1
+requests==2.32.5
+groq==0.33.0
+PyGithub==2.8.1
+fastapi==0.120.1
+uvicorn==0.38.0
+pydantic==2.12.3
+
+# Tier 1 — static-analysis baseline (Arm A). Required: it IS the baseline.
+ruff==0.14.0
+bandit==1.8.6
+
+# Tier 2 — OPTIONAL. Enable the embedding retriever and tree-sitter chunking.
+#          If these fail to install on Python 3.14, the experiment still runs:
+#          retrieval falls back to pure-Python BM25 and chunking to stdlib `ast`.
+#          Install separately and deliberately:
+#              .venv/bin/pip install -r requirements-optional.txt

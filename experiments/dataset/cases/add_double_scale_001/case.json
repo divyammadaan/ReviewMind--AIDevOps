@@ -1,0 +1,24 @@
+{
+  "case_id": "add_double_scale_001",
+  "defect_class": "broken_contract",
+  "target_file": "app/api.py",
+  "find": "def handle_complete_task(task_id: int, actor_id: int) -> dict[str, Any]:",
+  "replace": "def handle_completion_badge(user_id: int) -> dict[str, Any]:\n    \"\"\"Completion percentage, formatted for display.\"\"\"\n    ratio = completion_ratio(user_id)\n    return {\"status\": 200, \"data\": {\"percent\": f\"{ratio * 100:.0f}%\"}}\n\n\ndef handle_complete_task(task_id: int, actor_id: int) -> dict[str, Any]:",
+  "description": "New handler multiplies completion_ratio() by 100, double-scaling it.",
+  "why_wrong": "completion_ratio() already returns a PERCENTAGE (0-100), as its docstring and its `* 100.0` state in app/services/task.py. Multiplying again yields 5000% for a half-done user. The added code is internally plausible -- only the callee's unit convention, defined in another file, reveals the error.",
+  "requires_cross_file_context": true,
+  "static_analysis_expected": false,
+  "injection_mode": "addition",
+  "tags": [
+    "api_contract",
+    "silent_corruption",
+    "cross_file",
+    "additive"
+  ],
+  "injected_line": 34,
+  "injected_span": [
+    34,
+    39
+  ],
+  "diff": "--- a/app/api.py\n+++ b/app/api.py\n@@ -31,6 +31,12 @@\n     }\n \n \n+def handle_completion_badge(user_id: int) -> dict[str, Any]:\n+    \"\"\"Completion percentage, formatted for display.\"\"\"\n+    ratio = completion_ratio(user_id)\n+    return {\"status\": 200, \"data\": {\"percent\": f\"{ratio * 100:.0f}%\"}}\n+\n+\n def handle_complete_task(task_id: int, actor_id: int) -> dict[str, Any]:\n     if not complete_task(task_id, actor_id):\n         return {\"status\": 403, \"error\": \"not permitted or task missing\"}\n"
+}

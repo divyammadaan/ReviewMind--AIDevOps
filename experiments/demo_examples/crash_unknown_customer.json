@@ -1,0 +1,7 @@
+{
+  "id": "crash_unknown_customer",
+  "title": "Crashes for a customer who does not exist",
+  "plain": "The new code reads the customer's name straight away. But find_customer returns None when there is no such customer, and you cannot read a name out of None. That is defined in customers.py.",
+  "file": "service.py",
+  "diff": "--- a/service.py\n+++ b/service.py\n@@ -67,6 +67,13 @@\n     ))\n \n \n+@app.get(\"/greeting/{customer_id}\")\n+def greeting(customer_id: int):\n+    \"\"\"Greet the customer by name.\"\"\"\n+    customer = find_customer(customer_id)\n+    return {\"hello\": customer[\"name\"]}\n+\n+\n @app.get(\"/checkout/{customer_id}\")\n def checkout(customer_id: int, amount: float = 1000.0):\n     \"\"\"Work out what this customer pays for an order.\"\"\"\n"
+}

@@ -1,0 +1,10 @@
+# Point the control plane at tests/mock_github.py instead of the real GitHub.
+#   docker compose -f docker-compose.yml -f tests/docker-compose.mock.yml up -d ops
+services:
+  ops:
+    environment:
+      GITHUB_API_URL: http://host.docker.internal:9999
+      GITHUB_TOKEN: mock-token
+      GITHUB_REPO: mock/ReviewMind--AIDevOps
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

@@ -1,0 +1,22 @@
+{
+  "case_id": "bare_except_001",
+  "defect_class": "bare_except",
+  "target_file": "app/utils.py",
+  "find": "def is_valid_email(value: str) -> bool:\n    return bool(_EMAIL_RE.match(value))",
+  "replace": "def is_valid_email(value: str) -> bool:\n    try:\n        return bool(_EMAIL_RE.match(value))\n    except:\n        pass",
+  "description": "Bare `except:` that swallows all exceptions and returns None implicitly.",
+  "why_wrong": "A bare except catches KeyboardInterrupt and SystemExit, hiding real failures. The function is annotated `-> bool` but returns None on the exception path, so callers doing `if is_valid_email(x)` silently treat errors as invalid input.",
+  "requires_cross_file_context": false,
+  "static_analysis_expected": true,
+  "injection_mode": "deletion",
+  "tags": [
+    "error_handling",
+    "type_contract"
+  ],
+  "injected_line": 9,
+  "injected_span": [
+    9,
+    12
+  ],
+  "diff": "--- a/app/utils.py\n+++ b/app/utils.py\n@@ -6,7 +6,10 @@\n \n \n def is_valid_email(value: str) -> bool:\n-    return bool(_EMAIL_RE.match(value))\n+    try:\n+        return bool(_EMAIL_RE.match(value))\n+    except:\n+        pass\n \n \n def truncate(text: str, limit: int = 20) -> str:\n"
+}

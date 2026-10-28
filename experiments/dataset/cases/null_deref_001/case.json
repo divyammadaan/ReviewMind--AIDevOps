@@ -1,0 +1,23 @@
+{
+  "case_id": "null_deref_001",
+  "defect_class": "null_dereference",
+  "target_file": "app/services/user.py",
+  "find": "def get_display_name(user_id: int) -> str:\n    \"\"\"Human-readable name for a user, or 'unknown' when absent.\"\"\"\n    user = get_user(user_id)\n    if user is None:\n        return \"unknown\"\n    return user[\"name\"]",
+  "replace": "def get_display_name(user_id: int) -> str:\n    \"\"\"Human-readable name for a user, or 'unknown' when absent.\"\"\"\n    user = get_user(user_id)\n    return user[\"name\"]",
+  "description": "None-check removed before dereferencing the result of get_user().",
+  "why_wrong": "get_user() delegates to db.fetch_user(), which returns None for unknown ids. Indexing None raises TypeError. Recognising this requires knowing fetch_user's contract, which is defined in app/db.py -- outside the diff.",
+  "requires_cross_file_context": true,
+  "static_analysis_expected": false,
+  "injection_mode": "deletion",
+  "tags": [
+    "logic",
+    "error_handling",
+    "cross_file"
+  ],
+  "injected_line": 20,
+  "injected_span": [
+    20,
+    20
+  ],
+  "diff": "--- a/app/services/user.py\n+++ b/app/services/user.py\n@@ -17,8 +17,6 @@\n def get_display_name(user_id: int) -> str:\n     \"\"\"Human-readable name for a user, or 'unknown' when absent.\"\"\"\n     user = get_user(user_id)\n-    if user is None:\n-        return \"unknown\"\n     return user[\"name\"]\n \n \n"
+}

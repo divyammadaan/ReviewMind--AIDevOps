@@ -1,0 +1,19 @@
+{
+  "timestamp_utc": "20261004T105129Z",
+  "arms": [
+    "static",
+    "llm_diff",
+    "llm_rag"
+  ],
+  "mode": "live",
+  "repeats": 1,
+  "top_k": 6,
+  "retriever": "bidir",
+  "n_cases": 14,
+  "model": "openai/gpt-oss-120b",
+  "git_commit": "not-a-git-repo",
+  "python": "3.14.4",
+  "platform": "Linux-aarch64",
+  "valid_for_reporting": true,
+  "validity_note": "All responses came from a live model."
+}

@@ -1,0 +1,7 @@
+{
+  "id": "overcharge_discount",
+  "title": "Charges Rs.20,000 instead of Rs.800",
+  "plain": "The new code multiplies the order by the discount number. But discount_percent returns 20 meaning 'twenty percent OFF' -- not a multiplier. That rule is written in pricing.py, a DIFFERENT file.",
+  "file": "service.py",
+  "diff": "--- a/service.py\n+++ b/service.py\n@@ -67,6 +67,13 @@\n     ))\n \n \n+@app.get(\"/quote/{customer_id}\")\n+def quote(customer_id: int, amount: float = 1000.0):\n+    \"\"\"Quick price quote for a customer.\"\"\"\n+    tier = customer_tier(customer_id)\n+    return {\"quote\": amount * discount_percent(tier)}\n+\n+\n @app.get(\"/checkout/{customer_id}\")\n def checkout(customer_id: int, amount: float = 1000.0):\n     \"\"\"Work out what this customer pays for an order.\"\"\"\n"
+}

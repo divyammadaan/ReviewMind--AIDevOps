@@ -1,0 +1,290 @@
+{
+  "info": {
+    "name": "ReviewMind API",
+    "description": "ReviewMind - Semantic AI Code Reviewer.\n\nRun the requests top to bottom; they tell the story of the project.\n\nPREREQUISITES\n  1. API server:  .venv/bin/uvicorn api.main:app --port 8000\n  2. Shop service: cd experiments/corpus/shop && uvicorn service:app --port 9000 --reload\n\nTHE KEY COMPARISON is requests 4 and 5: the SAME code change reviewed\nwithout and with repository context. Everything else supports that.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Health check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/health",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "health"
+          ]
+        },
+        "description": "Confirms the API is running, which model is configured, and how many code chunks are indexed. Start here to prove the service is live."
+      },
+      "response": []
+    },
+    {
+      "name": "2. Demo status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/demo/status",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "demo",
+            "status"
+          ]
+        },
+        "description": "Current state of the demo shop: is the checkout broken, and what is it charging for a Rs.1000 order? A broken checkout reports 20000."
+      },
+      "response": []
+    },
+    {
+      "name": "3. Break the checkout",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/demo/break",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "demo",
+            "break"
+          ]
+        },
+        "description": "Reintroduces the defect so the demonstration can be repeated. After this, request 2 reports 'broken' and the shop page charges Rs.20,000.",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "4. Review WITHOUT retrieval",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/review",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "review"
+          ]
+        },
+        "description": "Reviews the change with the AI seeing ONLY the diff.\n\nExpect a plausible but WRONG diagnosis - it has no way to know what discount_percent returns, because that lives in another file.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"diff\": \"diff --git a/experiments/corpus/shop/service.py b/experiments/corpus/shop/service.py\\nindex 6e64013..25d0788 100644\\n--- a/experiments/corpus/shop/service.py\\n+++ b/experiments/corpus/shop/service.py\\n@@ -56,7 +56,7 @@ def shop(customer: int = 101, amount: float = 1000.0):\\n \\n     tier = record[\\\"tier\\\"]\\n     percent = discount_percent(tier)\\n-    payable = apply_discount(amount, tier)\\n+    payable = amount * percent\\n \\n     return HTMLResponse(storefront.render(\\n         name=record[\\\"name\\\"], tier=tier, discount=percent,\\n\",\n  \"use_retrieval\": false,\n  \"changed_file\": \"service.py\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "5. Review WITH retrieval",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/review",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "review"
+          ]
+        },
+        "description": "The SAME change, SAME model, SAME prompt - but the reviewer may first fetch related code from the repository.\n\nExpect the correct diagnosis, and look at the 'context' array: it shows which chunks were fetched and whether each was a callee, a caller, or a lexical match. That is the project's central claim, visible in one response.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"diff\": \"diff --git a/experiments/corpus/shop/service.py b/experiments/corpus/shop/service.py\\nindex 6e64013..25d0788 100644\\n--- a/experiments/corpus/shop/service.py\\n+++ b/experiments/corpus/shop/service.py\\n@@ -56,7 +56,7 @@ def shop(customer: int = 101, amount: float = 1000.0):\\n \\n     tier = record[\\\"tier\\\"]\\n     percent = discount_percent(tier)\\n-    payable = apply_discount(amount, tier)\\n+    payable = amount * percent\\n \\n     return HTMLResponse(storefront.render(\\n         name=record[\\\"name\\\"], tier=tier, discount=percent,\\n\",\n  \"use_retrieval\": true,\n  \"changed_file\": \"service.py\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "6. Static analysis baseline",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/static",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "static"
+          ]
+        },
+        "description": "Runs ruff + bandit - traditional linters, no AI. This is the baseline the experiment compares against. Expect it to find nothing here: the defect is semantic, not a pattern.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"diff\": \"diff --git a/experiments/corpus/shop/service.py b/experiments/corpus/shop/service.py\\nindex 6e64013..25d0788 100644\\n--- a/experiments/corpus/shop/service.py\\n+++ b/experiments/corpus/shop/service.py\\n@@ -56,7 +56,7 @@ def shop(customer: int = 101, amount: float = 1000.0):\\n \\n     tier = record[\\\"tier\\\"]\\n     percent = discount_percent(tier)\\n-    payable = apply_discount(amount, tier)\\n+    payable = amount * percent\\n \\n     return HTMLResponse(storefront.render(\\n         name=record[\\\"name\\\"], tier=tier, discount=percent,\\n\",\n  \"changed_file\": \"service.py\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "7. Code Q&A bot",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/ask",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "ask"
+          ]
+        },
+        "description": "The RAG question-answering bot over the same codebase. Answers are grounded in retrieved code and cite their sources.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"What does discount_percent return - a percentage or a fraction?\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "8. Review a live GitHub pull request",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/demo/review",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "demo",
+            "review"
+          ]
+        },
+        "description": "Fetches a real pull request from GitHub, reviews it, and posts inline comments back to it. Set post=false to review without commenting.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pr\": 7,\n  \"post\": false\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "9. Let ReviewMind fix it",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/demo/fix",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "demo",
+            "fix"
+          ]
+        },
+        "description": "Asks the model to WRITE a fix and applies it to the service. The fix is generated each time, not replayed from a stored copy. Afterwards, request 2 reports 'working' and the shop charges Rs.800.",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    }
+  ]
+}

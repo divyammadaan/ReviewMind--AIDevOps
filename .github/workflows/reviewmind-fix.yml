@@ -1,0 +1,86 @@
+# ReviewMind issue->PR automation (replaces the defunct Sweep.dev).
+#
+# Sweep.dev's hosted service no longer exists -- sweep.dev does not resolve in
+# DNS as of 2026-10-04, and the project pivoted to a JetBrains plugin. See
+# docs/TOOL_COVERAGE.md for the evidence. This workflow delivers the capability
+# Sweep.dev provided: label an issue, get an AI-generated pull request.
+#
+# SAFETY
+#   * Triggered ONLY by a maintainer applying the `reviewmind-fix` label, never
+#     automatically on every issue. A human decides when the agent runs.
+#   * `issues` events always run in the base-repo context with the base-repo
+#     workflow file, so there is no fork-PR injection path here.
+#   * The agent writes to a NEW branch and opens a PR. It never merges, never
+#     force-pushes, and its path allow-list forbids touching .github/,
+#     requirements, Dockerfile or .env -- so it cannot rewrite this pipeline.
+
+name: ReviewMind Fix
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: write        # create a branch
+  pull-requests: write   # open a PR
+  issues: write          # comment back on the issue
+
+concurrency:
+  group: reviewmind-fix-${{ github.event.issue.number }}
+  cancel-in-progress: false   # never cancel a half-written branch
+
+jobs:
+  fix:
+    # Only act on the explicit opt-in label.
+    if: github.event.label.name == 'reviewmind-fix'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install ReviewMind
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Configure git identity for the bot commit
+        run: |
+          git config user.name  "reviewmind-bot"
+          git config user.email "reviewmind-bot@users.noreply.github.com"
+
+      - name: Generate and open a PR
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GROQ_MODEL: ${{ vars.GROQ_MODEL || 'openai/gpt-oss-120b' }}
+          REVIEWMIND_LLM_MODE: live
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          REPO_FULL_NAME: ${{ github.repository }}
+          BASE_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          python -m reviewmind.automation.cli \
+            --issue-number "$ISSUE_NUMBER" \
+            --issue-title "$ISSUE_TITLE" \
+            --repo-root . \
+            --apply
+
+      - name: Report failure back to the issue
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'ReviewMind could not generate a fix for this issue. See the workflow logs.'
+            })

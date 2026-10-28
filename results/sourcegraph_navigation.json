@@ -1,0 +1,142 @@
+{
+  "src_version": "Current version: 8.0.0",
+  "endpoint": "https://sourcegraph.com",
+  "authenticated": false,
+  "n_queries": 6,
+  "n_queries_with_hits": 5,
+  "queries": [
+    {
+      "label": "symbol definition lookup",
+      "capability": "type:symbol -- index-backed symbol search",
+      "query": "repo:^github\\.com/pallets/werkzeug$ lang:python type:symbol cached_property",
+      "why_not_grep": "type:symbol queries Sourcegraph's symbol index, returning DEFINITIONS rather than every textual mention. grep would also return imports, call sites and comments.",
+      "n_hits": 2,
+      "errors": [],
+      "hits": [
+        {
+          "repository": "github.com/pallets/werkzeug",
+          "path": "src/werkzeug/utils.py",
+          "line_number": null,
+          "preview": "from __future__ import annotations\n\nimport io\nimport mimetypes\nimport os\nimport pkgutil\nimport re\nimport sys\nimport typing as t\nimport unicodedata\nfrom datetime"
+        },
+        {
+          "repository": "github.com/pallets/werkzeug",
+          "path": "tests/test_utils.py",
+          "line_number": null,
+          "preview": "from __future__ import annotations\n\nimport inspect\nfrom contextlib import nullcontext\nfrom datetime import datetime\n\nimport pytest\n\nfrom werkzeug import Request"
+        }
+      ]
+    },
+    {
+      "label": "structural search (syntax-aware)",
+      "capability": "patterntype:structural -- matches code SHAPE, not text",
+      "query": "repo:^github\\.com/pallets/flask$ lang:python patterntype:structural except ...: pass",
+      "why_not_grep": "Structural search matches the syntactic shape regardless of whitespace, the exception type, or intervening comments. A regex for this is either unreadable or wrong.",
+      "n_hits": 6,
+      "errors": [],
+      "hits": [
+        {
+          "repository": "github.com/pallets/flask",
+          "path": "src/flask/cli.py",
+          "line_number": 76,
+          "preview": "except TypeError as e:"
+        },
+        {
+          "repository": "github.com/pallets/flask",
+          "path": "src/flask/cli.py",
+          "line_number": 77,
+          "preview": "if not _called_with_wrong_args(app_factory):"
+        },
+        {
+          "repository": "github.com/pallets/flask",
+          "path": "src/flask/cli.py",
+          "line_number": 78,
+          "preview": "raise"
+        }
+      ]
+    },
+    {
+      "label": "call-site navigation",
+      "capability": "scoped literal search -- approximate 'find references'",
+      "query": "repo:^github\\.com/pallets/flask$ lang:python send_file(",
+      "why_not_grep": "Scoped to one repo and one language by the index, so results are not polluted by unrelated languages or vendored copies.",
+      "n_hits": 3,
+      "errors": [],
+      "hits": [
+        {
+          "repository": "github.com/pallets/flask",
+          "path": "src/flask/helpers.py",
+          "line_number": 417,
+          "preview": "def send_file("
+        },
+        {
+          "repository": "github.com/pallets/flask",
+          "path": "src/flask/helpers.py",
+          "line_number": 528,
+          "preview": "return werkzeug.utils.send_file(  # type: ignore[return-value]"
+        },
+        {
+          "repository": "github.com/pallets/flask",
+          "path": "tests/test_helpers.py",
+          "line_number": 34,
+          "preview": "def test_send_file(self, app, req_ctx):"
+        }
+      ]
+    },
+    {
+      "label": "cross-repository pattern search",
+      "capability": "repo-unscoped search across ALL indexed public repos",
+      "query": "lang:python patterntype:structural subprocess.run(..., shell=True)",
+      "why_not_grep": "THE capability our local retriever fundamentally cannot provide: searching code we have not cloned. Finds a risky pattern across the whole public corpus.",
+      "n_hits": 0,
+      "errors": [
+        "src exited 1: Post \"https://sourcegraph.com/.api/graphql\": http2: timeout awaiting response headers\n"
+      ],
+      "hits": []
+    },
+    {
+      "label": "diff/history search",
+      "capability": "type:diff -- searches commit history, not the working tree",
+      "query": "repo:^github\\.com/psf/requests$ type:diff lang:python verify=False",
+      "why_not_grep": "Searches what CHANGED over history. grep sees only the current checkout, so a pattern added and later removed is invisible to it.",
+      "n_hits": 1,
+      "errors": [],
+      "hits": [
+        {
+          "repository": "",
+          "path": "",
+          "line_number": null,
+          "preview": ""
+        }
+      ]
+    },
+    {
+      "label": "filename-scoped search",
+      "capability": "file: filters -- narrow by path",
+      "query": "repo:^github\\.com/pallets/flask$ file:test_ lang:python patterntype:structural assert ...",
+      "why_not_grep": "Combines a path filter with a structural pattern in one indexed query.",
+      "n_hits": 6,
+      "errors": [],
+      "hits": [
+        {
+          "repository": "github.com/pallets/flask",
+          "path": "tests/test_json.py",
+          "line_number": 25,
+          "preview": "assert rv.status_code == 400"
+        },
+        {
+          "repository": "github.com/pallets/flask",
+          "path": "tests/test_json.py",
+          "line_number": 26,
+          "preview": "contains = b\"Failed to decode JSON object\" in rv.data"
+        },
+        {
+          "repository": "github.com/pallets/flask",
+          "path": "tests/test_json.py",
+          "line_number": 27,
+          "preview": "assert contains == debug"
+        }
+      ]
+    }
+  ]
+}

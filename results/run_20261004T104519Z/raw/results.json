@@ -1,0 +1,1089 @@
+[
+  {
+    "arm": "static",
+    "case_id": "hardcoded_secret_001",
+    "issues": [
+      {
+        "file": "/home/manan-sharma/ReviewMind_IDT/experiments/dataset/cases/hardcoded_secret_001/after/app/db.py",
+        "line": 6,
+        "severity": "high",
+        "category": "security",
+        "message": "Possible hardcoded password assigned to: \"DB_PASSWORD\"",
+        "suggestion": "",
+        "source": "ruff",
+        "rule_id": "S105"
+      },
+      {
+        "file": "/home/manan-sharma/ReviewMind_IDT/experiments/dataset/cases/hardcoded_secret_001/after/app/db.py",
+        "line": 7,
+        "severity": "high",
+        "category": "security",
+        "message": "Possible hardcoded password assigned to: \"API_TOKEN\"",
+        "suggestion": "",
+        "source": "ruff",
+        "rule_id": "S105"
+      },
+      {
+        "file": "/home/manan-sharma/ReviewMind_IDT/experiments/dataset/cases/hardcoded_secret_001/after/app/db.py",
+        "line": 15,
+        "severity": "medium",
+        "category": "lint",
+        "message": "Line too long (89 > 88)",
+        "suggestion": "",
+        "source": "ruff",
+        "rule_id": "E501"
+      }
+    ],
+    "test_suggestions": [],
+    "latency_s": 0.059,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "llm_diff",
+    "case_id": "hardcoded_secret_001",
+    "issues": [
+      {
+        "file": "app/db.py",
+        "line": 5,
+        "severity": "critical",
+        "category": "security",
+        "message": "Hardcoded production credentials (DB_PASSWORD, API_TOKEN) are committed in source code, exposing secrets.",
+        "suggestion": "Remove these constants and load credentials from environment variables or a secret manager instead.",
+        "source": "llm_diff",
+        "rule_id": ""
+      }
+    ],
+    "test_suggestions": [
+      {
+        "target": "app.db",
+        "name": "test_no_hardcoded_credentials",
+        "rationale": "Ensures that no secret constants are defined in the module, catching accidental inclusion of hard\u2011coded credentials.",
+        "code": "import importlib\n\ndef test_no_hardcoded_credentials():\n    db = importlib.import_module(\"app.db\")\n    for secret_name in (\"DB_PASSWORD\", \"API_TOKEN\"):\n        assert not hasattr(db, secret_name), f\"{secret_name} should not be defined in app.db\""
+      }
+    ],
+    "latency_s": 2.36,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 706,
+    "completion_tokens": 784,
+    "model": "openai/gpt-oss-120b",
+    "retriever": "none",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "llm_rag",
+    "case_id": "hardcoded_secret_001",
+    "issues": [
+      {
+        "file": "app/db.py",
+        "line": 6,
+        "severity": "high",
+        "category": "security",
+        "message": "Hardcoded database password and API token are committed in source code, exposing secrets.",
+        "suggestion": "Remove DB_PASSWORD and API_TOKEN from code and load them securely from environment variables or a secret manager.",
+        "source": "llm_rag",
+        "rule_id": ""
+      }
+    ],
+    "test_suggestions": [
+      {
+        "target": "app.db",
+        "name": "test_no_hardcoded_credentials",
+        "rationale": "Detects accidental inclusion of secret values in the codebase.",
+        "code": "def test_no_hardcoded_credentials():\n    import app.db as db\n    # Ensure secret constants are not defined in the module\n    assert not hasattr(db, \"DB_PASSWORD\"), \"DB_PASSWORD should not be hardcoded in source\"\n    assert not hasattr(db, \"API_TOKEN\"), \"API_TOKEN should not be hardcoded in source\""
+      }
+    ],
+    "latency_s": 1.873,
+    "retrieval_s": 0.0006,
+    "prompt_tokens": 1154,
+    "completion_tokens": 675,
+    "model": "openai/gpt-oss-120b",
+    "retriever": "bm25+bidirectional-callgraph",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "static",
+    "case_id": "bare_except_001",
+    "issues": [
+      {
+        "file": "/home/manan-sharma/ReviewMind_IDT/experiments/dataset/cases/bare_except_001/after/app/utils.py",
+        "line": 11,
+        "severity": "medium",
+        "category": "lint",
+        "message": "Do not use bare `except`",
+        "suggestion": "",
+        "source": "ruff",
+        "rule_id": "E722"
+      },
+      {
+        "file": "/home/manan-sharma/ReviewMind_IDT/experiments/dataset/cases/bare_except_001/after/app/utils.py",
+        "line": 11,
+        "severity": "high",
+        "category": "security",
+        "message": "`try`-`except`-`pass` detected, consider logging the exception",
+        "suggestion": "",
+        "source": "ruff",
+        "rule_id": "S110"
+      }
+    ],
+    "test_suggestions": [],
+    "latency_s": 0.086,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "llm_diff",
+    "case_id": "bare_except_001",
+    "issues": [
+      {
+        "file": "app/utils.py",
+        "line": 9,
+        "severity": "high",
+        "category": "contract",
+        "message": "The except block catches all exceptions and then does nothing, causing is_valid_email to return None instead of a bool, violating its return contract.",
+        "suggestion": "Remove the broad except or return a default bool value (e.g., False) inside the except block.",
+        "source": "llm_diff",
+        "rule_id": ""
+      },
+      {
+        "file": "app/utils.py",
+        "line": 9,
+        "severity": "medium",
+        "category": "error_handling",
+        "message": "Catching all exceptions without handling masks bugs and makes debugging difficult.",
+        "suggestion": "Catch specific exceptions (e.g., TypeError) or let them propagate.",
+        "source": "llm_diff",
+        "rule_id": ""
+      }
+    ],
+    "test_suggestions": [
+      {
+        "target": "is_valid_email",
+        "name": "test_is_valid_email_non_string_returns_false_or_raises",
+        "rationale": "Ensures that passing a non-string (e.g., None) does not cause the function to return None or silently swallow errors.",
+        "code": "def test_is_valid_email_non_string_returns_false_or_raises():\n    import pytest\n    from app.utils import is_valid_email\n    # Expect a TypeError or a False return, but not None\n    result = is_valid_email(None)\n    assert isinstance(result, bool), \"is_valid_email should return a bool\"\n    # If the implementation chooses to return False for invalid input\n    assert result is False"
+      }
+    ],
+    "latency_s": 2.38,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 655,
+    "completion_tokens": 798,
+    "model": "openai/gpt-oss-120b",
+    "retriever": "none",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "llm_rag",
+    "case_id": "bare_except_001",
+    "issues": [
+      {
+        "file": "app/utils.py",
+        "line": 9,
+        "severity": "high",
+        "category": "error_handling",
+        "message": "A bare except catches all exceptions (including SystemExit, KeyboardInterrupt) and silently discards them, causing the function to fall through without returning a value.",
+        "suggestion": "Catch only the specific exception(s) you expect (e.g., TypeError) and handle them appropriately, or let unexpected exceptions propagate.",
+        "source": "llm_rag",
+        "rule_id": ""
+      },
+      {
+        "file": "app/utils.py",
+        "line": 10,
+        "severity": "high",
+        "category": "contract",
+        "message": "When an exception is caught the function reaches the end without returning, implicitly returning None, violating the documented bool return type.",
+        "suggestion": "Return a boolean value (e.g., False) in the except block or re\u2011raise the exception after logging.",
+        "source": "llm_rag",
+        "rule_id": ""
+      }
+    ],
+    "test_suggestions": [
+      {
+        "target": "app.utils.is_valid_email",
+        "name": "test_is_valid_email_non_string_returns_false_or_raises",
+        "rationale": "Ensures the function returns a boolean for non\u2011string inputs and does not silently return None, catching the regression introduced by the bare except.",
+        "code": "def test_is_valid_email_non_string_returns_false_or_raises():\n    import pytest\n    from app.utils import is_valid_email\n    # Non\u2011string input should not cause the function to return None\n    with pytest.raises(TypeError):\n        is_valid_email(None)\n    # Alternatively, if the intended behavior is to return False, assert that\n    # assert is_valid_email(None) is False"
+      }
+    ],
+    "latency_s": 2.347,
+    "retrieval_s": 0.0005,
+    "prompt_tokens": 1343,
+    "completion_tokens": 982,
+    "model": "openai/gpt-oss-120b",
+    "retriever": "bm25+bidirectional-callgraph",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "static",
+    "case_id": "sql_injection_001",
+    "issues": [
+      {
+        "file": "/home/manan-sharma/ReviewMind_IDT/experiments/dataset/cases/sql_injection_001/after/app/db.py",
+        "line": 11,
+        "severity": "medium",
+        "category": "lint",
+        "message": "Line too long (89 > 88)",
+        "suggestion": "",
+        "source": "ruff",
+        "rule_id": "E501"
+      },
+      {
+        "file": "/home/manan-sharma/ReviewMind_IDT/experiments/dataset/cases/sql_injection_001/after/app/db.py",
+        "line": 33,
+        "severity": "high",
+        "category": "security",
+        "message": "Possible SQL injection vector through string-based query construction",
+        "suggestion": "",
+        "source": "ruff",
+        "rule_id": "S608"
+      }
+    ],
+    "test_suggestions": [],
+    "latency_s": 0.091,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "llm_diff",
+    "case_id": "sql_injection_001",
+    "issues": [
+      {
+        "file": "app/db.py",
+        "line": 32,
+        "severity": "high",
+        "category": "security",
+        "message": "SQL query is built by concatenating user input, allowing SQL injection.",
+        "suggestion": "Use parameterized queries with placeholders, e.g., conn.execute('SELECT * FROM tasks WHERE title LIKE ?', ('%'+term+'%',)).",
+        "source": "llm_diff",
+        "rule_id": ""
+      },
+      {
+        "file": "app/db.py",
+        "line": 32,
+        "severity": "medium",
+        "category": "crash",
+        "message": "If term contains a single quote, the generated SQL is syntactically invalid and will raise an exception.",
+        "suggestion": "Escape the term or, better, use parameterized queries as above.",
+        "source": "llm_diff",
+        "rule_id": ""
+      },
+      {
+        "file": "app/db.py",
+        "line": 31,
+        "severity": "low",
+        "category": "error_handling",
+        "message": "Database connection is never closed, causing a resource leak.",
+        "suggestion": "Use a context manager: with sqlite3.connect('tasks.db') as conn: ...",
+        "source": "llm_diff",
+        "rule_id": ""
+      },
+      {
+        "file": "app/db.py",
+        "line": 33,
+        "severity": "medium",
+        "category": "contract",
+        "message": "Function is annotated to return list[dict[str, Any]] but fetchall() returns list of tuples, breaking the contract.",
+        "suggestion": "Configure the connection's row_factory to sqlite3.Row and convert rows to dicts before returning.",
+        "source": "llm_diff",
+        "rule_id": ""
+      }
+    ],
+    "test_suggestions": [
+      {
+        "target": "search_tasks",
+        "name": "test_search_tasks_sql_injection_protection",
+        "rationale": "Ensures that malicious input cannot retrieve all rows, catching the injection vulnerability.",
+        "code": "def test_search_tasks_sql_injection_protection(tmp_path, monkeypatch):\n    import sqlite3, os\n    db_path = os.path.join(tmp_path, 'tasks.db')\n    conn = sqlite3.connect(db_path)\n    conn.execute('CREATE TABLE tasks (id INTEGER PRIMARY KEY, title TEXT)')\n    conn.executemany('INSERT INTO tasks (title) VALUES (?)', [('alpha',), ('beta',)])\n    conn.commit()\n    conn.close()\n    monkeypatch.setattr('app.db.sqlite3.connect', lambda _: sqlite3.connect(db_path))\n    # Attempt injection that would return all rows if concatenated\n    result = search_tasks(\"' OR '1'='1\")\n    # Should only return rows where title contains the literal string, i.e., empty list\n    assert result == []\n"
+      }
+    ],
+    "latency_s": 2.965,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 689,
+    "completion_tokens": 1125,
+    "model": "openai/gpt-oss-120b",
+    "retriever": "none",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "llm_rag",
+    "case_id": "sql_injection_001",
+    "issues": [
+      {
+        "file": "app/db.py",
+        "line": 32,
+        "severity": "high",
+        "category": "crash",
+        "message": "The SQL query is built by concatenating the raw term, so a term containing a single quote will produce a malformed SQL statement and raise an exception.",
+        "suggestion": "Use parameterized queries (e.g., \"SELECT * FROM tasks WHERE title LIKE ?\" with ('%'+term+'%',) as parameters).",
+        "source": "llm_rag",
+        "rule_id": ""
+      },
+      {
+        "file": "app/db.py",
+        "line": 32,
+        "severity": "high",
+        "category": "security",
+        "message": "Direct string interpolation of the user\u2011provided term enables SQL injection attacks.",
+        "suggestion": "Switch to a parameterized query to safely bind the term value.",
+        "source": "llm_rag",
+        "rule_id": ""
+      },
+      {
+        "file": "app/db.py",
+        "line": 33,
+        "severity": "medium",
+        "category": "contract",
+        "message": "The function is annotated to return a list of dicts but returns the raw tuples from sqlite3, violating its contract.",
+        "suggestion": "Configure the connection with row_factory=sqlite3.Row or convert each row to a dict before returning.",
+        "source": "llm_rag",
+        "rule_id": ""
+      },
+      {
+        "file": "app/db.py",
+        "line": 33,
+        "severity": "low",
+        "category": "error_handling",
+        "message": "The SQLite connection is never closed, leading to a resource leak.",
+        "suggestion": "Use a context manager (with sqlite3.connect(...) as conn:) so the connection is automatically closed.",
+        "source": "llm_rag",
+        "rule_id": ""
+      }
+    ],
+    "test_suggestions": [
+      {
+        "target": "app.db.search_tasks",
+        "name": "test_search_tasks_sql_injection_prevention",
+        "rationale": "Ensures that a term containing SQL metacharacters does not cause a syntax error or allow injection.",
+        "code": "def test_search_tasks_sql_injection_prevention():\n    # term includes a single quote and an always\u2011true condition\n    malicious_term = \"test' OR '1'='1\"\n    # The function should raise an OperationalError or safely return no results, but not execute the injected clause\n    import pytest, sqlite3\n    from app.db import search_tasks\n    with pytest.raises(sqlite3.OperationalError):\n        search_tasks(malicious_term)"
+      },
+      {
+        "target": "app.db.search_tasks",
+        "name": "test_search_tasks_return_type",
+        "rationale": "Verifies that the function returns a list of dictionaries as documented, not raw tuples.",
+        "code": "def test_search_tasks_return_type(monkeypatch):\n    # Mock sqlite3 to return a known row structure\n    class MockCursor:\n        def fetchall(self):\n            return [(1, \"Sample\", \"desc\", 0)]\n    class MockConn:\n        def execute(self, query, params=None):\n            return MockCursor()\n        def __enter__(self):\n            return self\n        def __exit__(self, exc_type, exc, tb):\n            pass\n    def mock_connect(db):\n        return MockConn()\n    monkeypatch.setattr('sqlite3.connect', mock_connect)\n    from app.db import search_tasks\n    result = search_tasks('Sample')\n    assert isinstance(result, list)\n    assert all(isinstance(row, dict) for row in result), \"Rows should be dicts\"\n"
+      }
+    ],
+    "latency_s": 8.72,
+    "retrieval_s": 0.0006,
+    "prompt_tokens": 1227,
+    "completion_tokens": 1484,
+    "model": "openai/gpt-oss-120b",
+    "retriever": "bm25+bidirectional-callgraph",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "static",
+    "case_id": "off_by_one_001",
+    "issues": [],
+    "test_suggestions": [],
+    "latency_s": 0.09,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "llm_diff",
+    "case_id": "off_by_one_001",
+    "issues": [
+      {
+        "file": "app/utils.py",
+        "line": 15,
+        "severity": "high",
+        "category": "logic",
+        "message": "The function now returns a string of length limit+1, violating the contract that the result should be at most `limit` characters.",
+        "suggestion": "Restore the slice to `text[: limit - 3]` so the total length including the ellipsis does not exceed `limit`.",
+        "source": "llm_diff",
+        "rule_id": ""
+      }
+    ],
+    "test_suggestions": [
+      {
+        "target": "shorten",
+        "name": "test_shorten_respects_limit",
+        "rationale": "Ensures the returned string length never exceeds the specified limit, catching off\u2011by\u2011one errors.",
+        "code": "def test_shorten_respects_limit():\n    from app.utils import shorten\n    txt = \"abcdefghijklmnopqrstuvwxyz\"\n    limit = 10\n    result = shorten(txt, limit)\n    assert len(result) <= limit\n    assert result.endswith('...')\n    # When text is shorter than limit, it should be unchanged\n    short_txt = \"short\"\n    assert shorten(short_txt, limit) == short_txt"
+      }
+    ],
+    "latency_s": 14.584,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 665,
+    "completion_tokens": 506,
+    "model": "openai/gpt-oss-120b",
+    "retriever": "none",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "llm_rag",
+    "case_id": "off_by_one_001",
+    "issues": [
+      {
+        "file": "app/utils.py",
+        "line": 17,
+        "severity": "high",
+        "category": "logic",
+        "message": "The function now slices text with limit-2 before adding \"...\", producing a result longer than the specified limit, violating the docstring contract.",
+        "suggestion": "Change the slice to use limit-3, i.e., return text[: limit - 3] + \"...\"",
+        "source": "llm_rag",
+        "rule_id": ""
+      }
+    ],
+    "test_suggestions": [
+      {
+        "target": "app.utils.shorten",
+        "name": "test_shorten_respects_limit",
+        "rationale": "Ensures that the shortened string never exceeds the requested limit and correctly appends an ellipsis when truncation occurs.",
+        "code": "def test_shorten_respects_limit():\n    from app.utils import shorten\n    text = \"abcdefghijklmnopqrstuvwxyz\"\n    limit = 10\n    result = shorten(text, limit)\n    assert len(result) <= limit, \"Result exceeds limit\"\n    assert result.endswith('...'), \"Result should end with ellipsis when truncated\"\n    # When text is shorter than or equal to limit, it should be unchanged\n    short_text = \"short\"\n    assert shorten(short_text, limit) == short_text"
+      }
+    ],
+    "latency_s": 12.874,
+    "retrieval_s": 0.0006,
+    "prompt_tokens": 1239,
+    "completion_tokens": 938,
+    "model": "openai/gpt-oss-120b",
+    "retriever": "bm25+bidirectional-callgraph",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "static",
+    "case_id": "off_by_one_002",
+    "issues": [
+      {
+        "file": "/home/manan-sharma/ReviewMind_IDT/experiments/dataset/cases/off_by_one_002/after/app/services/task.py",
+        "line": 6,
+        "severity": "medium",
+        "category": "lint",
+        "message": "`app.services.user.get_user` imported but unused",
+        "suggestion": "Remove unused import: `app.services.user.get_user`",
+        "source": "ruff",
+        "rule_id": "F401"
+      }
+    ],
+    "test_suggestions": [],
+    "latency_s": 0.09,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "llm_diff",
+    "case_id": "off_by_one_002",
+    "issues": [
+      {
+        "file": "app/services/task.py",
+        "line": 44,
+        "severity": "high",
+        "category": "logic",
+        "message": "The loop starts at tasks[2:], skipping the second task, so the function may return an incorrect best task when the list has two or more elements.",
+        "suggestion": "Iterate over tasks[1:] instead of tasks[2:] to consider all tasks after the first.",
+        "source": "llm_diff",
+        "rule_id": ""
+      }
+    ],
+    "test_suggestions": [
+      {
+        "target": "select_best_task",
+        "name": "test_select_best_task_chooses_lowest_priority",
+        "rationale": "Ensures the function evaluates all tasks; with the buggy slice it would return the first task even if a later task has a lower priority.",
+        "code": "def test_select_best_task_chooses_lowest_priority():\n    tasks = [\n        {\"id\": 1, \"priority\": 5},\n        {\"id\": 2, \"priority\": 1},\n        {\"id\": 3, \"priority\": 3},\n    ]\n    result = select_best_task(tasks)\n    assert result[\"id\"] == 2, \"Expected task with lowest priority (id=2) to be selected\""
+      }
+    ],
+    "latency_s": 6.556,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 652,
+    "completion_tokens": 955,
+    "model": "openai/gpt-oss-120b",
+    "retriever": "none",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "llm_rag",
+    "case_id": "off_by_one_002",
+    "issues": [
+      {
+        "file": "app/services/task.py",
+        "line": 44,
+        "severity": "high",
+        "category": "logic",
+        "message": "The loop now iterates over tasks[2:] instead of tasks[1:], skipping the second task and potentially returning the wrong task as the best priority.",
+        "suggestion": "Change the slice back to tasks[1:] so all remaining tasks are examined.",
+        "source": "llm_rag",
+        "rule_id": ""
+      }
+    ],
+    "test_suggestions": [
+      {
+        "target": "app.services.task.get_best_task",
+        "name": "test_get_best_task_considers_all_items",
+        "rationale": "Ensures the function evaluates every task; the bug would cause the second task to be ignored and return an incorrect result.",
+        "code": "def test_get_best_task_considers_all_items():\n    from app.services.task import get_best_task\n    tasks = [\n        {\"id\": 1, \"priority\": 5},\n        {\"id\": 2, \"priority\": 1},  # lowest priority should be selected\n        {\"id\": 3, \"priority\": 3},\n    ]\n    best = get_best_task(tasks)\n    assert best[\"id\"] == 2, \"The task with the lowest priority should be returned\"\n"
+      }
+    ],
+    "latency_s": 19.932,
+    "retrieval_s": 0.0011,
+    "prompt_tokens": 1230,
+    "completion_tokens": 1115,
+    "model": "openai/gpt-oss-120b",
+    "retriever": "bm25+bidirectional-callgraph",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "static",
+    "case_id": "missing_error_handling_001",
+    "issues": [],
+    "test_suggestions": [],
+    "latency_s": 0.089,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "llm_diff",
+    "case_id": "missing_error_handling_001",
+    "issues": [
+      {
+        "file": "app/utils.py",
+        "line": 20,
+        "severity": "high",
+        "category": "crash",
+        "message": "Removing the zero check causes a ZeroDivisionError when whole is 0.",
+        "suggestion": "Reintroduce the guard: if whole == 0: return 0.0",
+        "source": "llm_diff",
+        "rule_id": ""
+      },
+      {
+        "file": "app/utils.py",
+        "line": 20,
+        "severity": "high",
+        "category": "contract",
+        "message": "The function docstring states it returns 0.0 when whole is zero, but the implementation no longer does that.",
+        "suggestion": "Ensure the implementation matches the docstring by handling whole == 0 case.",
+        "source": "llm_diff",
+        "rule_id": ""
+      }
+    ],
+    "test_suggestions": [
+      {
+        "target": "percent",
+        "name": "test_percent_zero_denominator",
+        "rationale": "Catches division by zero and verifies the function returns 0.0 when whole is zero as documented.",
+        "code": "def test_percent_zero_denominator():\n    from app.utils import percent\n    assert percent(5, 0) == 0.0"
+      }
+    ],
+    "latency_s": 11.956,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 657,
+    "completion_tokens": 598,
+    "model": "openai/gpt-oss-120b",
+    "retriever": "none",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "llm_rag",
+    "case_id": "missing_error_handling_001",
+    "issues": [
+      {
+        "file": "app/utils.py",
+        "line": 20,
+        "severity": "high",
+        "category": "crash",
+        "message": "Removing the zero check causes a ZeroDivisionError when whole is 0, violating the documented behavior of returning 0.0.",
+        "suggestion": "Re\u2011introduce the guard: if whole == 0: return 0.0 before performing the division.",
+        "source": "llm_rag",
+        "rule_id": ""
+      }
+    ],
+    "test_suggestions": [
+      {
+        "target": "app.utils.percent",
+        "name": "test_percent_zero_denominator",
+        "rationale": "Ensures the function returns 0.0 and does not raise when whole is zero, catching the regression introduced by the removal of the guard.",
+        "code": "def test_percent_zero_denominator():\n    assert percent(5, 0) == 0.0"
+      }
+    ],
+    "latency_s": 7.606,
+    "retrieval_s": 0.0005,
+    "prompt_tokens": 1219,
+    "completion_tokens": 509,
+    "model": "openai/gpt-oss-120b",
+    "retriever": "bm25+bidirectional-callgraph",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "static",
+    "case_id": "null_deref_001",
+    "issues": [],
+    "test_suggestions": [],
+    "latency_s": 0.063,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "llm_diff",
+    "case_id": "null_deref_001",
+    "issues": [
+      {
+        "file": "app/services/user.py",
+        "line": 20,
+        "severity": "high",
+        "category": "crash",
+        "message": "If get_user returns None, the code attempts to subscript None, raising a TypeError, violating the function's contract of returning \"unknown\" for missing users.",
+        "suggestion": "Reintroduce a check for None (e.g., if user is None: return \"unknown\") before accessing user[\"name\"].",
+        "source": "llm_diff",
+        "rule_id": ""
+      }
+    ],
+    "test_suggestions": [
+      {
+        "target": "get_display_name",
+        "name": "test_get_display_name_unknown_when_user_missing",
+        "rationale": "Ensures the function returns \"unknown\" instead of raising an exception when the user does not exist, catching the regression introduced by removing the None check.",
+        "code": "def test_get_display_name_unknown_when_user_missing(monkeypatch):\n    # Arrange: mock get_user to return None for a specific id\n    def mock_get_user(user_id):\n        return None\n    monkeypatch.setattr('app.services.user.get_user', mock_get_user)\n    # Act & Assert\n    assert get_display_name(999) == \"unknown\"\n"
+      }
+    ],
+    "latency_s": 10.903,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 651,
+    "completion_tokens": 667,
+    "model": "openai/gpt-oss-120b",
+    "retriever": "none",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "llm_rag",
+    "case_id": "null_deref_001",
+    "issues": [
+      {
+        "file": "app/services/user.py",
+        "line": 20,
+        "severity": "high",
+        "category": "crash",
+        "message": "Removed the None check, so get_display_name will raise a TypeError when get_user returns None, violating the docstring that promises \"unknown\" for absent users.",
+        "suggestion": "Re\u2011introduce the check for a None user and return \"unknown\" before accessing user[\"name\"].",
+        "source": "llm_rag",
+        "rule_id": ""
+      }
+    ],
+    "test_suggestions": [
+      {
+        "target": "app.services.user.get_display_name",
+        "name": "test_get_display_name_unknown_user",
+        "rationale": "Ensures the function returns \"unknown\" and does not raise when the user does not exist, catching the regression introduced by the removed check.",
+        "code": "def test_get_display_name_unknown_user(monkeypatch):\n    # Arrange: mock get_user to return None for a specific id\n    def mock_get_user(user_id):\n        return None\n    monkeypatch.setattr('app.services.user.get_user', mock_get_user)\n    # Act\n    result = get_display_name(999)\n    # Assert\n    assert result == \"unknown\""
+      }
+    ],
+    "latency_s": 10.284,
+    "retrieval_s": 0.0007,
+    "prompt_tokens": 1136,
+    "completion_tokens": 822,
+    "model": "openai/gpt-oss-120b",
+    "retriever": "bm25+bidirectional-callgraph",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "static",
+    "case_id": "null_deref_002",
+    "issues": [
+      {
+        "file": "/home/manan-sharma/ReviewMind_IDT/experiments/dataset/cases/null_deref_002/after/app/services/task.py",
+        "line": 6,
+        "severity": "medium",
+        "category": "lint",
+        "message": "`app.services.user.get_user` imported but unused",
+        "suggestion": "Remove unused import: `app.services.user.get_user`",
+        "source": "ruff",
+        "rule_id": "F401"
+      }
+    ],
+    "test_suggestions": [],
+    "latency_s": 0.091,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "llm_diff",
+    "case_id": "null_deref_002",
+    "issues": [
+      {
+        "file": "app/services/task.py",
+        "line": 20,
+        "severity": "high",
+        "category": "crash",
+        "message": "If get_task returns None, task is None and task[\"owner_id\"] raises TypeError.",
+        "suggestion": "Add a check for None (e.g., if task is None: return False) before accessing task fields.",
+        "source": "llm_diff",
+        "rule_id": ""
+      },
+      {
+        "file": "app/services/task.py",
+        "line": 22,
+        "severity": "medium",
+        "category": "contract",
+        "message": "Function is annotated to return bool but falls off the end returning None after marking task done.",
+        "suggestion": "Return True after setting task[\"done\"] = True to satisfy the bool contract.",
+        "source": "llm_diff",
+        "rule_id": ""
+      }
+    ],
+    "test_suggestions": [
+      {
+        "target": "complete_task",
+        "name": "test_complete_task_missing_task_returns_false",
+        "rationale": "Ensures the function handles a non\u2011existent task without raising and returns False as intended.",
+        "code": "def test_complete_task_missing_task_returns_false(monkeypatch):\n    # Stub get_task to return None\n    monkeypatch.setattr('app.services.task.get_task', lambda task_id: None)\n    # Stub is_admin (should not be called, but provide safe default)\n    monkeypatch.setattr('app.services.task.is_admin', lambda actor_id: False)\n    assert complete_task(999, 1) is False\n"
+      },
+      {
+        "target": "complete_task",
+        "name": "test_complete_task_success_returns_true",
+        "rationale": "Verifies that a successful completion returns True and does not return None.",
+        "code": "def test_complete_task_success_returns_true(monkeypatch):\n    task = {'owner_id': 1, 'done': False}\n    monkeypatch.setattr('app.services.task.get_task', lambda task_id: task)\n    monkeypatch.setattr('app.services.task.is_admin', lambda actor_id: False)\n    result = complete_task(42, 1)\n    assert result is True\n    assert task['done'] is True"
+      }
+    ],
+    "latency_s": 15.708,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 678,
+    "completion_tokens": 1139,
+    "model": "openai/gpt-oss-120b",
+    "retriever": "none",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "llm_rag",
+    "case_id": "null_deref_002",
+    "issues": [
+      {
+        "file": "app/services/task.py",
+        "line": 20,
+        "severity": "high",
+        "category": "crash",
+        "message": "If get_task returns None for a missing task, accessing task[\"owner_id\"] raises TypeError.",
+        "suggestion": "Add a check for task is None and return False before accessing its fields.",
+        "source": "llm_rag",
+        "rule_id": ""
+      },
+      {
+        "file": "app/services/task.py",
+        "line": 22,
+        "severity": "high",
+        "category": "logic",
+        "message": "The function never returns True on success, violating its bool return contract and causing callers to treat success as failure.",
+        "suggestion": "Return True after setting task[\"done\"] = True.",
+        "source": "llm_rag",
+        "rule_id": ""
+      }
+    ],
+    "test_suggestions": [
+      {
+        "target": "complete_task",
+        "name": "test_complete_task_success_and_return",
+        "rationale": "Ensures that a valid owner can complete a task, the task is marked done, and the function returns True.",
+        "code": "def test_complete_task_success_and_return():\n    # arrange: create a task owned by user 1\n    task = {\"id\": 99, \"owner_id\": 1, \"title\": \"test\", \"done\": False, \"priority\": 1}\n    from app.db import save_task, fetch_task\n    save_task(task)\n    # act\n    result = complete_task(99, 1)\n    # assert\n    assert result is True\n    updated = fetch_task(99)\n    assert updated[\"done\"] is True"
+      },
+      {
+        "target": "complete_task",
+        "name": "test_complete_task_missing_returns_false",
+        "rationale": "Verifies that calling complete_task with a non\u2011existent task returns False and does not raise an exception.",
+        "code": "def test_complete_task_missing_returns_false():\n    result = complete_task(12345, 1)  # assuming 12345 does not exist\n    assert result is False"
+      }
+    ],
+    "latency_s": 12.456,
+    "retrieval_s": 0.001,
+    "prompt_tokens": 1283,
+    "completion_tokens": 1344,
+    "model": "openai/gpt-oss-120b",
+    "retriever": "bm25+bidirectional-callgraph",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "static",
+    "case_id": "broken_contract_001",
+    "issues": [
+      {
+        "file": "/home/manan-sharma/ReviewMind_IDT/experiments/dataset/cases/broken_contract_001/after/app/services/user.py",
+        "line": 28,
+        "severity": "medium",
+        "category": "lint",
+        "message": "Avoid specifying long messages outside the exception class",
+        "suggestion": "",
+        "source": "ruff",
+        "rule_id": "TRY003"
+      },
+      {
+        "file": "/home/manan-sharma/ReviewMind_IDT/experiments/dataset/cases/broken_contract_001/after/app/services/user.py",
+        "line": 31,
+        "severity": "medium",
+        "category": "lint",
+        "message": "Avoid specifying long messages outside the exception class",
+        "suggestion": "",
+        "source": "ruff",
+        "rule_id": "TRY003"
+      }
+    ],
+    "test_suggestions": [],
+    "latency_s": 0.088,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "llm_diff",
+    "case_id": "broken_contract_001",
+    "issues": [
+      {
+        "file": "app/services/user.py",
+        "line": 28,
+        "severity": "high",
+        "category": "contract",
+        "message": "Function docstring and signature promise returning False on invalid email, but code now raises ValueError, breaking the contract with callers expecting a boolean result.",
+        "suggestion": "Return False for invalid email as documented, or update docstring and callers to handle the exception.",
+        "source": "llm_diff",
+        "rule_id": ""
+      },
+      {
+        "file": "app/services/user.py",
+        "line": 31,
+        "severity": "high",
+        "category": "contract",
+        "message": "Function docstring promises returning False when user is not found, but code now raises LookupError, violating the documented contract.",
+        "suggestion": "Return False for missing user as documented, or revise documentation and dependent code to expect the exception.",
+        "source": "llm_diff",
+        "rule_id": ""
+      }
+    ],
+    "test_suggestions": [
+      {
+        "target": "update_email",
+        "name": "test_update_email_invalid_email_returns_false",
+        "rationale": "Ensures the function adheres to its documented contract of returning False for an invalid email rather than raising an exception.",
+        "code": "def test_update_email_invalid_email_returns_false(monkeypatch):\n    # stub out email validation to return False\n    monkeypatch.setattr('app.services.user.is_valid_email', lambda e: False)\n    result = update_email(1, 'bad-email')\n    assert result is False\n"
+      },
+      {
+        "target": "update_email",
+        "name": "test_update_email_missing_user_returns_false",
+        "rationale": "Verifies that the function returns False when the user does not exist, matching the documented behavior.",
+        "code": "def test_update_email_missing_user_returns_false(monkeypatch):\n    # stub out validation to succeed\n    monkeypatch.setattr('app.services.user.is_valid_email', lambda e: True)\n    # stub get_user to return None\n    monkeypatch.setattr('app.services.user.get_user', lambda uid: None)\n    result = update_email(999, 'test@example.com')\n    assert result is False\n"
+      }
+    ],
+    "latency_s": 15.203,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 694,
+    "completion_tokens": 1192,
+    "model": "openai/gpt-oss-120b",
+    "retriever": "none",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "llm_rag",
+    "case_id": "broken_contract_001",
+    "issues": [
+      {
+        "file": "app/services/user.py",
+        "line": 28,
+        "severity": "high",
+        "category": "contract",
+        "message": "The function docstring states it returns False on invalid email, but now raises ValueError, breaking the documented contract.",
+        "suggestion": "Return False instead of raising, or update docstring and all callers to handle the exception.",
+        "source": "llm_rag",
+        "rule_id": ""
+      },
+      {
+        "file": "app/services/user.py",
+        "line": 31,
+        "severity": "high",
+        "category": "contract",
+        "message": "The function docstring states it returns False when user not found, but now raises LookupError, violating the contract and callers' expectations.",
+        "suggestion": "Return False instead of raising, or adjust callers and documentation accordingly.",
+        "source": "llm_rag",
+        "rule_id": ""
+      },
+      {
+        "file": "app/services/user.py",
+        "line": 28,
+        "severity": "high",
+        "category": "crash",
+        "message": "Raising ValueError for an invalid email is not caught by handle_update_email, leading to an unhandled exception and a 500 response.",
+        "suggestion": "Handle the error in the API layer or keep the original False return to let the handler produce a 400.",
+        "source": "llm_rag",
+        "rule_id": ""
+      },
+      {
+        "file": "app/services/user.py",
+        "line": 31,
+        "severity": "high",
+        "category": "crash",
+        "message": "Raising LookupError for a missing user is uncaught by handle_update_email, causing a crash instead of a proper 400 error response.",
+        "suggestion": "Either catch the exception in the handler or revert to returning False.",
+        "source": "llm_rag",
+        "rule_id": ""
+      }
+    ],
+    "test_suggestions": [
+      {
+        "target": "app.api.handle_update_email",
+        "name": "test_handle_update_email_invalid_email",
+        "rationale": "Ensures that an invalid email results in a 400 response rather than an unhandled exception after the contract change.",
+        "code": "def test_handle_update_email_invalid_email():\n    response = handle_update_email(user_id=1, email=\"not-an-email\")\n    assert response == {\"status\": 400, \"error\": \"invalid user or email\"}\n"
+      },
+      {
+        "target": "app.api.handle_update_email",
+        "name": "test_handle_update_email_missing_user",
+        "rationale": "Verifies that a non\u2011existent user yields a 400 response, catching the regression where LookupError would be raised.",
+        "code": "def test_handle_update_email_missing_user():\n    response = handle_update_email(user_id=999, email=\"test@example.com\")\n    assert response == {\"status\": 400, \"error\": \"invalid user or email\"}\n"
+      }
+    ],
+    "latency_s": 16.069,
+    "retrieval_s": 0.0009,
+    "prompt_tokens": 1321,
+    "completion_tokens": 1115,
+    "model": "openai/gpt-oss-120b",
+    "retriever": "bm25+bidirectional-callgraph",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "static",
+    "case_id": "broken_contract_002",
+    "issues": [
+      {
+        "file": "/home/manan-sharma/ReviewMind_IDT/experiments/dataset/cases/broken_contract_002/after/app/services/task.py",
+        "line": 6,
+        "severity": "medium",
+        "category": "lint",
+        "message": "`app.services.user.get_user` imported but unused",
+        "suggestion": "Remove unused import: `app.services.user.get_user`",
+        "source": "ruff",
+        "rule_id": "F401"
+      }
+    ],
+    "test_suggestions": [],
+    "latency_s": 0.076,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "llm_diff",
+    "case_id": "broken_contract_002",
+    "issues": [
+      {
+        "file": "app/services/task.py",
+        "line": 32,
+        "severity": "high",
+        "category": "contract",
+        "message": "The function now returns a fraction (0-1) instead of a percentage as implied by the previous implementation and likely by its docstring or callers, breaking the contract.",
+        "suggestion": "Restore the original behavior by returning (done / len(tasks)) * 100.0 or update the docstring and all callers to expect a fraction.",
+        "source": "llm_diff",
+        "rule_id": ""
+      }
+    ],
+    "test_suggestions": [
+      {
+        "target": "completion_rate",
+        "name": "test_completion_rate_returns_percentage",
+        "rationale": "Ensures the function returns a percentage value (0-100) rather than a fraction, catching contract regression.",
+        "code": "def test_completion_rate_returns_percentage():\n    tasks = [{\"done\": True}, {\"done\": False}, {\"done\": True}]\n    # Assuming the function is imported as completion_rate\n    result = completion_rate(tasks)\n    assert isinstance(result, float)\n    assert 0.0 <= result <= 100.0\n    # With 2 out of 3 done, expected percentage is (2/3)*100 \u2248 66.6667\n    assert abs(result - (2/3)*100) < 1e-6"
+      }
+    ],
+    "latency_s": 8.668,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 663,
+    "completion_tokens": 527,
+    "model": "openai/gpt-oss-120b",
+    "retriever": "none",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "llm_rag",
+    "case_id": "broken_contract_002",
+    "issues": [
+      {
+        "file": "app/services/task.py",
+        "line": 34,
+        "severity": "high",
+        "category": "contract",
+        "message": "The function now returns a raw ratio (0\u20111) instead of the original percentage (0\u2011100) which callers like handle_user_summary expect, breaking the documented contract.",
+        "suggestion": "Restore the multiplication by 100.0 or update all callers and documentation to work with a 0\u20111 ratio.",
+        "source": "llm_rag",
+        "rule_id": ""
+      }
+    ],
+    "test_suggestions": [
+      {
+        "target": "app/api.handle_user_summary",
+        "name": "test_completion_percentage",
+        "rationale": "Ensures that completion is reported as a percentage (0\u2011100) as expected by API contracts.",
+        "code": "def test_completion_percentage(monkeypatch):\n    # Arrange: mock tasks so that user has two tasks, one done\n    from app import db\n    db._TASKS.clear()\n    db._TASKS.update({\n        1: {\"id\": 1, \"owner_id\": 1, \"title\": \"t1\", \"done\": True, \"priority\": 1},\n        2: {\"id\": 2, \"owner_id\": 1, \"title\": \"t2\", \"done\": False, \"priority\": 2},\n    })\n    # Act\n    from app.api import handle_user_summary\n    result = handle_user_summary(user_id=1)\n    # Assert: completion should be 50.0 (percentage), not 0.5\n    assert result[\"data\"][\"completion\"] == 50.0\n"
+      }
+    ],
+    "latency_s": 9.167,
+    "retrieval_s": 0.001,
+    "prompt_tokens": 1268,
+    "completion_tokens": 784,
+    "model": "openai/gpt-oss-120b",
+    "retriever": "bm25+bidirectional-callgraph",
+    "errors": [],
+    "repeat": 1
+  }
+]

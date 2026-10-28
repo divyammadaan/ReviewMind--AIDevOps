@@ -1,0 +1,7 @@
+{
+  "id": "forgot_the_tax",
+  "title": "Forgets to add GST",
+  "plain": "The new total skips the tax step. order_total adds GST, but this new function only applies the discount -- so every invoice is 18% short. The GST rule lives in pricing.py.",
+  "file": "orders.py",
+  "diff": "--- a/orders.py\n+++ b/orders.py\n@@ -17,6 +17,14 @@\n     return round(add_gst(after_discount), 2)\n \n \n+def quick_total(customer_id, base_amount):\n+    \"\"\"Total payable for a customer.\"\"\"\n+    customer = find_customer(customer_id)\n+    if customer is None:\n+        return 0\n+    return apply_discount(base_amount, customer[\"tier\"])\n+\n+\n def savings(customer_id, base_amount):\n     \"\"\"How much the customer saved against the undiscounted price.\"\"\"\n     customer = find_customer(customer_id)\n"
+}

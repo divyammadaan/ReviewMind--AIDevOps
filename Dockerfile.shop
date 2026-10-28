@@ -1,0 +1,25 @@
+# The demo Checkout API -- the service ReviewMind reviews.
+#
+# Deliberately a SEPARATE image from the reviewer. They are different things:
+# one is the project, the other is the subject it examines. Building them
+# together would blur that distinction in the architecture.
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
+WORKDIR /srv
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir "fastapi==0.120.1" "uvicorn==0.38.0"
+
+COPY experiments/corpus/shop/ /srv/
+
+EXPOSE 9000
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -fsS http://127.0.0.1:9000/ || exit 1
+
+# --reload so a fix written by ReviewMind takes effect without a restart.
+CMD ["uvicorn", "service:app", "--host", "0.0.0.0", "--port", "9000", "--reload"]

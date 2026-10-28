@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AIDevOps Control Plane</title>
+<style>
+  :root{--bg:#0b0d14;--panel:#12151f;--panel2:#171b28;--line:#242a3b;--ink:#e8ebf4;--muted:#8a93ab;
+    --ok:#22c55e;--bad:#ef4444;--warn:#f59e0b;--info:#60a5fa;--brand:#7c7cff}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,Segoe UI,Roboto,sans-serif}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--ink);padding:8px 14px;border-radius:9px;font-weight:600;font-size:13px;transition:.12s}
+  button:hover:not(:disabled){border-color:#3a4260;background:#1d2232}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.danger{border-color:#5b2327;color:#fca5a5}button.danger:hover:not(:disabled){background:#2a1518}
+  button.primary{background:var(--brand);border-color:var(--brand);color:#0b0d14}button.primary:hover:not(:disabled){filter:brightness(1.1);background:var(--brand)}
+  a{color:var(--info);text-decoration:none}
+  .top{display:flex;align-items:center;gap:16px;padding:16px 28px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+  .brand{font-weight:800;font-size:18px;letter-spacing:-.01em}.brand span{color:var(--muted);font-weight:500;margin-left:8px;font-size:13px}
+  .grow{flex:1}
+  .chip{font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);color:var(--muted)}
+  .chip b{color:var(--ink)}.chip.live b{color:var(--ok)}.chip.mock b{color:var(--warn)}
+  .ghchip{cursor:pointer;font:inherit;font-size:12px;padding:5px 10px;color:var(--muted)}.ghchip:hover:not(:disabled){border-color:#3a4260}
+  a.pr{color:var(--info);text-decoration:none}a.pr.closed{color:var(--muted)}a.pr span{border-color:#25406b}
+  .wrap{display:grid;grid-template-columns:1fr 340px;gap:22px;padding:24px 28px;max-width:1500px;margin:0 auto}
+  @media(max-width:1000px){.wrap{grid-template-columns:1fr}}
+  .summary{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 16px;min-width:110px}
+  .stat small{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em}.stat b{font-size:22px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+  .svc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden}
+  .svc::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c,var(--line))}
+  .head{display:flex;align-items:center;gap:10px}.head h3{margin:0;font-size:16px}.port{color:var(--muted);font-size:12px;margin-left:auto}
+  .pill{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:3px 9px;border-radius:999px;background:color-mix(in srgb,var(--c) 18%,transparent);color:var(--c)}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--c)}
+  .about{color:var(--muted);font-size:13px}
+  .detail{font-size:12px;background:#0d1019;border:1px solid var(--line);border-radius:8px;padding:9px 11px;color:#fca5a5;font-family:ui-monospace,Consolas,monospace;word-break:break-word}
+  .detail.blocked{color:#fcd34d}
+  .meta{display:flex;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--muted);align-items:center}
+  .meta span{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:2px 7px}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+  .healthy{--c:var(--ok)}.broken,.down{--c:var(--bad)}.blocked{--c:var(--warn)}.fixing{--c:var(--info)}.restarting,.starting{--c:var(--muted)}
+  .fixing .dot{animation:pulse 1s infinite}@keyframes pulse{50%{opacity:.25}}
+  details{font-size:12px}summary{cursor:pointer;color:var(--info)}
+  pre{margin:8px 0 0;background:#0d1019;border:1px solid var(--line);border-radius:8px;padding:10px;overflow:auto;max-height:220px;font-size:12px;line-height:1.5}
+  .add{color:#86efac}.del{color:#fca5a5}.hunk{color:var(--info)}
+  .feed{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;position:sticky;top:20px;max-height:calc(100vh - 110px);overflow:auto}
+  .feed h3{margin:0 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .ev{display:grid;grid-template-columns:62px 1fr;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .ev time{color:var(--muted);font-size:11px;padding-top:2px}.ev em{font-style:normal;font-weight:700;margin-right:6px}
+  .ev.err em{color:var(--bad)}.ev.ok em{color:var(--ok)}.ev.warn em{color:var(--warn)}.ev.info em{color:var(--info)}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="brand">ReviewMind <span>AIDevOps control plane</span></div>
+  <div class="grow"></div>
+  <div class="chip" id="mode"></div>
+  <div class="chip" id="keys"></div>
+  <div class="chip" id="tokens"></div>
+  <button class="chip ghchip" id="gh" onclick="toggleGh()" title="Open an incident pull request on GitHub for every fault"></button>
+  <a href="http://localhost:8080" target="_blank"><button>Open storefront ↗</button></a>
+</div>
+<div class="wrap">
+  <section>
+    <div class="summary">
+      <div class="stat"><small>Healthy</small><b id="sOk">0</b></div>
+      <div class="stat"><small>Failing</small><b id="sBad">0</b></div>
+      <div class="stat"><small>Being fixed</small><b id="sFix">0</b></div>
+      <div class="grow"></div>
+      <button class="danger" onclick="post('/api/chaos?count=2')">💥 Break 2 random</button>
+      <button onclick="post('/api/reset')">↺ Reset all</button>
+    </div>
+    <div class="cards" id="cards"></div>
+  </section>
+  <section class="feed"><h3>Activity</h3><div id="events"></div></section>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const openDiffs = new Set();
+let ghOn = false;
+const toggleGh = () => post("/api/github?enabled=" + !ghOn);
+const esc = s => String(s).replace(/[&<>]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;"}[c]));
+
+async function post(url) {
+  const r = await fetch(url, {method: "POST"});
+  if (!r.ok) { const e = await r.json().catch(() => ({})); alert(e.detail || "Request failed"); }
+  refresh();
+}
+const diffHtml = d => esc(d).split("\n").map(l =>
+  l.startsWith("+") && !l.startsWith("+++") ? `<span class="add">${l}</span>` :
+  l.startsWith("-") && !l.startsWith("---") ? `<span class="del">${l}</span>` :
+  l.startsWith("@@") ? `<span class="hunk">${l}</span>` : l).join("\n");
+
+function card(s) {
+  const bad = ["broken", "down"].includes(s.status);
+  const fixable = (bad || s.bug) && !s.fixing;
+  const buttons = !s.breakable ? "" : `<div class="btns">
+    <button class="danger" ${s.status !== "healthy" ? "disabled" : ""} onclick="post('/api/services/${s.name}/break')">Break</button>
+    <button class="primary" ${fixable ? "" : "disabled"} onclick="post('/api/services/${s.name}/fix?mode=ai')">✨ Fix with AI</button>
+    <button ${s.status === "healthy" && !s.bug ? "disabled" : ""} onclick="post('/api/services/${s.name}/fix?mode=golden')">Restore known-good</button></div>`;
+  const fix = s.last_fix ? `<details data-k="${s.name}" ${openDiffs.has(s.name) ? "open" : ""}><summary>Last repair: ${esc(s.last_fix.how)} · ${s.last_fix.seconds}s · ${s.last_fix.tokens} tokens</summary>
+    <pre>${diffHtml(s.last_fix.diff)}</pre></details>` : "";
+  return `<div class="svc ${s.status}"><div class="head"><span class="dot"></span><h3>${s.title}</h3>
+    <span class="pill">${s.status}</span><span class="port">:${s.port}</span></div>
+    <div class="about">${s.about}</div>
+    ${s.detail ? `<div class="detail ${s.status === "blocked" ? "blocked" : ""}">${esc(s.detail)}</div>` : ""}
+    <div class="meta">${s.latency_ms != null ? `<span>probe ${s.latency_ms} ms</span>` : ""}
+      ${s.deps.length ? `<span>needs: ${s.deps.join(", ")}</span>` : ""}
+      ${s.pr ? `<a class="pr ${s.pr.state}" href="${s.pr.url}" target="_blank"><span class="pr">PR #${s.pr.number} · ${s.pr.state}</span></a>` : ""}</div>
+    ${fix}${buttons}</div>`;
+}
+
+async function refresh() {
+  let st;
+  try { st = await (await fetch("/api/state")).json(); } catch { return; }
+  const open = document.querySelector("details[open]");
+  document.querySelectorAll("details[data-k]").forEach(d => d.open ? openDiffs.add(d.dataset.k) : openDiffs.delete(d.dataset.k));
+  $("cards").innerHTML = st.services.map(card).join("");
+  const n = st.services;
+  $("sOk").textContent = n.filter(s => s.status === "healthy").length;
+  $("sBad").textContent = n.filter(s => ["broken", "down", "blocked"].includes(s.status)).length;
+  $("sFix").textContent = n.filter(s => s.status === "fixing").length;
+  const l = st.llm;
+  $("mode").className = "chip " + (l.live ? "live" : "mock");
+  $("mode").innerHTML = l.live ? "Groq <b>live</b>" : "Groq <b>no key</b> · restores known-good";
+  $("keys").innerHTML = `Keys <b>${l.keys.length}</b>${l.last_used ? " · last: <b>" + l.last_used + "</b>" : ""}`;
+  $("tokens").innerHTML = `Tokens used <b>${l.tokens_used.toLocaleString()}</b>`;
+  const g = st.github; ghOn = g.enabled;
+  $("gh").className = "chip ghchip " + (g.enabled ? "live" : "mock");
+  $("gh").innerHTML = !g.configured ? "GitHub <b>not set up</b>" : g.enabled ? `GitHub <b>on</b> · ${esc(g.repo)}` : `GitHub <b>off</b> · ${esc(g.repo)}`;
+  $("gh").disabled = !g.configured;
+  $("events").innerHTML = st.events.map(e => `<div class="ev ${e.level}"><time>${e.ts}</time>
+    <div><em>${e.svc ? e.svc : "system"}</em>${esc(e.msg)}</div></div>`).join("");
+}
+refresh(); setInterval(refresh, 1500);
+</script>
+</body>
+</html>

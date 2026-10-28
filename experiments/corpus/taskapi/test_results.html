@@ -1,0 +1,333 @@
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Test Results</title>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                margin: 20px;
+            }
+            table {
+                border-collapse: collapse;
+                width: 100%;
+                box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+            }
+            th, td {
+                border: 1px solid #ddd;
+                text-align: left;
+                padding: 8px;
+            }
+            th {
+                background-color: #f2f2f2;
+            }
+            tr:nth-child(even) {
+                background-color: #f9f9f9;
+            }
+            .status-pass {
+                color: green;
+            }
+            .status-fail {
+                color: red;
+            }
+            pre {
+                background-color: #282c34 !important;
+                color: #ffffff !important;
+                padding: 10px;
+                border-radius: 5px;
+                overflow-x: auto;
+                white-space: pre-wrap;
+                font-family: 'Courier New', Courier, monospace;
+                font-size: 1.1em;  /* Slightly larger font size */
+            }
+        </style>
+    </head>
+    <body>
+        <table>
+            <tr>
+                <th>Status</th>
+                <th>Reason</th>
+                <th>Exit Code</th>
+                <th>Language</th>
+                <th>Modified Test File</th>
+                <th>Details</th>
+            </tr>
+            
+            <tr>
+                <td class="status-PASS">PASS</td>
+                <td></td>
+                <td>0</td>
+                <td>python</td>
+                <td>
+                    <details>
+                        <summary>View Full Code</summary>
+                        <pre><code><span class="diff-unchanged">  """Seed tests. cover-agent extends this file to raise coverage."""</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  import sys</span>
+<span class="diff-unchanged">  from pathlib import Path</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  sys.path.insert(0, str(Path(__file__).resolve().parent.parent))</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  from app.utils import percent, truncate</span>
+<span class="diff-added">+ from app.utils import is_valid_email</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  def test_truncate_short_string_unchanged():</span>
+<span class="diff-unchanged">      assert truncate("hi", limit=20) == "hi"</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  def test_percent_basic():</span>
+<span class="diff-unchanged">      assert percent(1, 2) == 50.0</span>
+<span class="diff-added">+ </span>
+<span class="diff-added">+ def test_is_valid_email_valid():</span>
+<span class="diff-added">+     email = "user@example.com"</span>
+<span class="diff-added">+     assert is_valid_email(email) is True</span>
+<span class="diff-added">+ </span></code></pre>
+                    </details>
+                </td>
+                <td>
+                    <details>
+                        <summary>View More</summary>
+                        <div><strong>STDERR:</strong> <pre><code class="language-python"></code></pre></div>
+                        <div><strong>STDOUT:</strong> <pre><code class="language-python">============================= test session starts ==============================
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /work
+plugins: cov-7.1.0, platformdirs-4.12.3, anyio-4.15.1
+collected 3 items
+
+tests/test_utils.py ...                                                  [100%]
+
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.11.16-final-0 _______________
+
+Coverage XML written to file coverage.xml
+============================== 3 passed in 0.02s ===============================
+</code></pre></div>
+                        <div><strong>Test Code:</strong> <pre><code class="language-python">def test_is_valid_email_valid():
+    email = "user@example.com"
+    assert is_valid_email(email) is True
+</code></pre></div>
+                        <div><strong>Imports:</strong> <pre><code class="language-python">from app.utils import is_valid_email
+</code></pre></div>
+                    </details>
+                </td>
+            </tr>
+            
+            <tr>
+                <td class="status-FAIL">FAIL</td>
+                <td>Coverage did not increase. Maybe the test did run but did not increase coverage, or maybe the test execution was skipped due to some problem</td>
+                <td>0</td>
+                <td>python</td>
+                <td>
+                    <details>
+                        <summary>View Full Code</summary>
+                        <pre><code><span class="diff-unchanged">  """Seed tests. cover-agent extends this file to raise coverage."""</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  import sys</span>
+<span class="diff-unchanged">  from pathlib import Path</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  sys.path.insert(0, str(Path(__file__).resolve().parent.parent))</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  from app.utils import percent, truncate</span>
+<span class="diff-unchanged">  from app.utils import is_valid_email</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  def test_truncate_short_string_unchanged():</span>
+<span class="diff-unchanged">      assert truncate("hi", limit=20) == "hi"</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  def test_percent_basic():</span>
+<span class="diff-unchanged">      assert percent(1, 2) == 50.0</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-added">+ def test_is_valid_email_invalid():</span>
+<span class="diff-added">+     email = "userexample.com"</span>
+<span class="diff-added">+     assert is_valid_email(email) is False</span>
+<span class="diff-added">+ </span>
+<span class="diff-added">+ </span>
+<span class="diff-unchanged">  def test_is_valid_email_valid():</span>
+<span class="diff-unchanged">      email = "user@example.com"</span>
+<span class="diff-unchanged">      assert is_valid_email(email) is True</span>
+<span class="diff-unchanged">  </span></code></pre>
+                    </details>
+                </td>
+                <td>
+                    <details>
+                        <summary>View More</summary>
+                        <div><strong>STDERR:</strong> <pre><code class="language-python"></code></pre></div>
+                        <div><strong>STDOUT:</strong> <pre><code class="language-python">============================= test session starts ==============================
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /work
+plugins: cov-7.1.0, platformdirs-4.12.3, anyio-4.15.1
+collected 4 items
+
+tests/test_utils.py ....                                                 [100%]
+
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.11.16-final-0 _______________
+
+Coverage XML written to file coverage.xml
+============================== 4 passed in 0.02s ===============================
+</code></pre></div>
+                        <div><strong>Test Code:</strong> <pre><code class="language-python">def test_is_valid_email_invalid():
+    email = "userexample.com"
+    assert is_valid_email(email) is False
+</code></pre></div>
+                        <div><strong>Imports:</strong> <pre><code class="language-python">from app.utils import is_valid_email
+</code></pre></div>
+                    </details>
+                </td>
+            </tr>
+            
+            <tr>
+                <td class="status-PASS">PASS</td>
+                <td></td>
+                <td>0</td>
+                <td>python</td>
+                <td>
+                    <details>
+                        <summary>View Full Code</summary>
+                        <pre><code><span class="diff-unchanged">  """Seed tests. cover-agent extends this file to raise coverage."""</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  import sys</span>
+<span class="diff-unchanged">  from pathlib import Path</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  sys.path.insert(0, str(Path(__file__).resolve().parent.parent))</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  from app.utils import percent, truncate</span>
+<span class="diff-unchanged">  from app.utils import is_valid_email</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  def test_truncate_short_string_unchanged():</span>
+<span class="diff-unchanged">      assert truncate("hi", limit=20) == "hi"</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  def test_percent_basic():</span>
+<span class="diff-unchanged">      assert percent(1, 2) == 50.0</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-added">+ def test_truncate_long_string():</span>
+<span class="diff-added">+     text = "abcdefghijklmnopqrstuvwxyz"</span>
+<span class="diff-added">+     limit = 10</span>
+<span class="diff-added">+     result = truncate(text, limit=limit)</span>
+<span class="diff-added">+     assert result == "abcdefg..."</span>
+<span class="diff-added">+     assert len(result) == limit</span>
+<span class="diff-added">+     assert result.endswith("...")</span>
+<span class="diff-added">+ </span>
+<span class="diff-added">+ </span>
+<span class="diff-unchanged">  def test_is_valid_email_valid():</span>
+<span class="diff-unchanged">      email = "user@example.com"</span>
+<span class="diff-unchanged">      assert is_valid_email(email) is True</span>
+<span class="diff-unchanged">  </span></code></pre>
+                    </details>
+                </td>
+                <td>
+                    <details>
+                        <summary>View More</summary>
+                        <div><strong>STDERR:</strong> <pre><code class="language-python"></code></pre></div>
+                        <div><strong>STDOUT:</strong> <pre><code class="language-python">============================= test session starts ==============================
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /work
+plugins: cov-7.1.0, platformdirs-4.12.3, anyio-4.15.1
+collected 4 items
+
+tests/test_utils.py ....                                                 [100%]
+
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.11.16-final-0 _______________
+
+Coverage XML written to file coverage.xml
+============================== 4 passed in 0.03s ===============================
+</code></pre></div>
+                        <div><strong>Test Code:</strong> <pre><code class="language-python">def test_truncate_long_string():
+    text = "abcdefghijklmnopqrstuvwxyz"
+    limit = 10
+    result = truncate(text, limit=limit)
+    assert result == "abcdefg..."
+    assert len(result) == limit
+    assert result.endswith("...")
+</code></pre></div>
+                        <div><strong>Imports:</strong> <pre><code class="language-python"></code></pre></div>
+                    </details>
+                </td>
+            </tr>
+            
+            <tr>
+                <td class="status-PASS">PASS</td>
+                <td></td>
+                <td>0</td>
+                <td>python</td>
+                <td>
+                    <details>
+                        <summary>View Full Code</summary>
+                        <pre><code><span class="diff-unchanged">  """Seed tests. cover-agent extends this file to raise coverage."""</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  import sys</span>
+<span class="diff-unchanged">  from pathlib import Path</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  sys.path.insert(0, str(Path(__file__).resolve().parent.parent))</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  from app.utils import percent, truncate</span>
+<span class="diff-unchanged">  from app.utils import is_valid_email</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  def test_truncate_short_string_unchanged():</span>
+<span class="diff-unchanged">      assert truncate("hi", limit=20) == "hi"</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  def test_percent_basic():</span>
+<span class="diff-unchanged">      assert percent(1, 2) == 50.0</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-added">+ def test_percent_zero_whole():</span>
+<span class="diff-added">+     assert percent(5, 0) == 0.0</span>
+<span class="diff-added">+     assert percent(0, 0) == 0.0</span>
+<span class="diff-added">+ </span>
+<span class="diff-added">+ </span>
+<span class="diff-unchanged">  def test_truncate_long_string():</span>
+<span class="diff-unchanged">      text = "abcdefghijklmnopqrstuvwxyz"</span>
+<span class="diff-unchanged">      limit = 10</span>
+<span class="diff-unchanged">      result = truncate(text, limit=limit)</span>
+<span class="diff-unchanged">      assert result == "abcdefg..."</span>
+<span class="diff-unchanged">      assert len(result) == limit</span>
+<span class="diff-unchanged">      assert result.endswith("...")</span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  </span>
+<span class="diff-unchanged">  def test_is_valid_email_valid():</span>
+<span class="diff-unchanged">      email = "user@example.com"</span>
+<span class="diff-unchanged">      assert is_valid_email(email) is True</span>
+<span class="diff-unchanged">  </span></code></pre>
+                    </details>
+                </td>
+                <td>
+                    <details>
+                        <summary>View More</summary>
+                        <div><strong>STDERR:</strong> <pre><code class="language-python"></code></pre></div>
+                        <div><strong>STDOUT:</strong> <pre><code class="language-python">============================= test session starts ==============================
+platform linux -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
+rootdir: /work
+plugins: cov-7.1.0, platformdirs-4.12.3, anyio-4.15.1
+collected 5 items
+
+tests/test_utils.py .....                                                [100%]
+
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.11.16-final-0 _______________
+
+Coverage XML written to file coverage.xml
+============================== 5 passed in 0.03s ===============================
+</code></pre></div>
+                        <div><strong>Test Code:</strong> <pre><code class="language-python">def test_percent_zero_whole():
+    assert percent(5, 0) == 0.0
+    assert percent(0, 0) == 0.0
+</code></pre></div>
+                        <div><strong>Imports:</strong> <pre><code class="language-python"></code></pre></div>
+                    </details>
+                </td>
+            </tr>
+            
+        </table>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/prism.min.js"></script>
+    </body>
+    </html>
+    

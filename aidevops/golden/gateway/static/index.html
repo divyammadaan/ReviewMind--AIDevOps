@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Volt — Gear for people who build things</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+  :root{
+    --ink:#0f1115;--ink2:#3b4150;--muted:#7a8191;--line:#e8eaf0;--bg:#fff;--soft:#f6f7f9;
+    --accent:#2f5bff;--accent-d:#2447d6;--ok:#0f9d58;--warn:#c77700;--bad:#d93025;
+    --r:18px;--shadow:0 1px 2px rgba(15,17,21,.04),0 8px 24px rgba(15,17,21,.06);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
+  button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+
+
+  .ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .ico.w{width:15px;height:15px;stroke:none;fill:#fff}.ico.s{width:15px;height:15px}.ico.l{width:30px;height:30px;stroke-width:2}.ico.xl{width:40px;height:40px;stroke-width:1.4;color:#b4bac8}
+  .trust span{color:var(--ink)}.eyebrow .ico,.float .ico{margin-right:-2px}.float.b .ico{color:#f5a623;fill:#f5a623;stroke:none}
+  .oksvg{display:inline-flex;vertical-align:-3px;margin-right:2px}
+  .none .ico{margin:0 auto 12px;display:block}.none div{font-size:0}
+  .announce{background:var(--ink);color:#fff;font-size:13px;text-align:center;padding:9px 16px;letter-spacing:.01em}
+  .announce b{color:#9db4ff;font-weight:600}
+
+  header{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.88);backdrop-filter:saturate(180%) blur(14px);border-bottom:1px solid var(--line)}
+  .nav{display:flex;align-items:center;gap:28px;height:68px}
+  .logo{font-weight:800;font-size:22px;letter-spacing:-.04em;display:flex;align-items:center;gap:8px}
+  .logo i{width:26px;height:26px;border-radius:8px;background:var(--ink);display:grid;place-items:center;color:#fff;font-style:normal;font-size:14px}
+  .links{display:flex;gap:22px;font-size:14px;font-weight:500;color:var(--ink2)}
+  .links a:hover{color:var(--ink)}
+  .grow{flex:1}
+  .search{position:relative;width:260px}
+  .search input{width:100%;height:40px;border-radius:999px;border:1px solid var(--line);background:var(--soft);padding:0 16px 0 40px;font:inherit;font-size:14px;outline:none;transition:.15s}
+  .search input:focus{background:#fff;border-color:var(--accent);box-shadow:0 0 0 4px rgba(47,91,255,.12)}
+  .search svg{position:absolute;left:14px;top:12px;width:16px;height:16px;color:var(--muted)}
+  .cartbtn{position:relative;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;transition:.15s}
+  .cartbtn:hover{background:var(--soft)}
+  .cartbtn svg{width:22px;height:22px}
+  .badge{position:absolute;top:2px;right:0;min-width:19px;height:19px;border-radius:999px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 5px;border:2px solid #fff}
+
+  .hero{padding:56px 0 24px}
+  .hero-in{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;background:linear-gradient(135deg,#f3f5ff 0%,#eef1ff 45%,#f6f0ff 100%);border-radius:28px;padding:56px 56px;overflow:hidden;position:relative}
+  .eyebrow{display:inline-flex;gap:8px;align-items:center;font-size:13px;font-weight:600;color:var(--accent);background:#fff;border:1px solid #dfe5ff;border-radius:999px;padding:6px 12px}
+  .hero h1{font-size:56px;line-height:1.04;letter-spacing:-.035em;margin:18px 0 16px;font-weight:800}
+  .hero p{font-size:18px;line-height:1.55;color:var(--ink2);margin:0 0 28px;max-width:460px}
+  .cta{display:flex;gap:12px;flex-wrap:wrap}
+  .btn{height:48px;padding:0 24px;border-radius:999px;font-weight:600;font-size:15px;display:inline-flex;align-items:center;gap:8px;transition:.15s}
+  .btn.p{background:var(--ink);color:#fff}.btn.p:hover{background:#000;transform:translateY(-1px)}
+  .btn.s{background:#fff;border:1px solid var(--line)}.btn.s:hover{border-color:#c9cedb}
+  .orb{position:relative;height:340px;display:grid;place-items:center}
+  .orb .disc{position:absolute;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fff,#dfe5ff 55%,#cdd6ff);box-shadow:inset 0 -20px 50px rgba(47,91,255,.15)}
+  .orb .big{position:relative;width:320px;height:320px;border-radius:50%;object-fit:cover;box-shadow:0 30px 60px rgba(36,71,214,.25);animation:float 6s ease-in-out infinite}
+  .float{position:absolute;background:#fff;border-radius:14px;box-shadow:var(--shadow);padding:10px 14px;font-size:13px;font-weight:600;display:flex;gap:8px;align-items:center}
+  .float.a{top:34px;left:0}.float.b{bottom:40px;right:0}
+  .float i{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+  @keyframes float{50%{transform:translateY(-12px)}}
+
+  .trust{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:20px 0 8px}
+  .trust div{display:flex;gap:12px;align-items:center;font-size:14px;color:var(--ink2)}
+  .trust b{display:block;color:var(--ink);font-size:14px}
+  .trust span{width:40px;height:40px;border-radius:12px;background:var(--soft);display:grid;place-items:center;font-size:18px}
+
+  .section{padding:40px 0 70px}
+  .sec-h{display:flex;align-items:end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+  .sec-h h2{margin:0;font-size:30px;letter-spacing:-.03em}.sec-h p{margin:4px 0 0;color:var(--muted);font-size:14px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{height:36px;padding:0 16px;border-radius:999px;border:1px solid var(--line);font-size:14px;font-weight:500;color:var(--ink2);transition:.15s}
+  .chip:hover{border-color:#c9cedb}.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:22px}
+  .card{display:flex;flex-direction:column;border-radius:var(--r);background:#fff;transition:.2s}
+  .pic{position:relative;background:var(--soft);aspect-ratio:1/1;border-radius:var(--r);display:grid;place-items:center;overflow:hidden;transition:.25s}
+  .pic .em{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+  .card:hover .em{transform:scale(1.06)}
+  .tag{z-index:2;position:absolute;top:14px;left:14px;background:rgba(255,255,255,.9);backdrop-filter:blur(6px);border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:5px 10px}
+  .quick{z-index:2;position:absolute;left:14px;right:14px;bottom:14px;height:44px;border-radius:12px;background:var(--ink);color:#fff;font-weight:600;font-size:14px;opacity:0;transform:translateY(8px);transition:.2s}
+  .card:hover .quick{opacity:1;transform:none}
+  .quick:hover{background:#000}.quick:disabled{background:#9aa0ad;cursor:not-allowed}
+  .meta{padding:14px 4px 6px;display:flex;flex-direction:column;gap:3px}
+  .row{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+  .name{font-weight:600;font-size:16px;letter-spacing:-.01em}.price{font-weight:700;font-size:16px}
+  .cat{color:var(--muted);font-size:13px}
+  .st{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ok);margin-top:4px}
+  .st i{width:7px;height:7px;border-radius:50%;background:currentColor}.st.low{color:var(--warn)}.st.out{color:var(--bad)}.st.na{color:var(--muted)}
+    .cat-accessories{background:linear-gradient(145deg,#e7f7ee,#cfeedd)}.cat-video{background:linear-gradient(145deg,#f4eaff,#e5d3ff)}
+
+  .skel{aspect-ratio:1/1;border-radius:var(--r);background:linear-gradient(90deg,#f0f1f4 25%,#f8f9fb 50%,#f0f1f4 75%);background-size:200% 100%;animation:sh 1.3s infinite}
+  @keyframes sh{to{background-position:-200% 0}}
+  .err{grid-column:1/-1;text-align:center;border:1px dashed #f0c4c0;background:#fff7f6;border-radius:var(--r);padding:48px 24px}
+  .err h3{margin:0 0 6px;font-size:20px}.err p{margin:0 0 18px;color:var(--ink2);font-size:14px}
+  .empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:40px}
+
+  footer{border-top:1px solid var(--line);padding:36px 0;color:var(--muted);font-size:13px}
+  footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+  .scrim{position:fixed;inset:0;background:rgba(15,17,21,.4);opacity:0;pointer-events:none;transition:.25s;z-index:40}
+  .scrim.on{opacity:1;pointer-events:auto}
+  aside{position:fixed;top:0;right:0;bottom:0;width:440px;max-width:100%;background:#fff;z-index:50;transform:translateX(100%);transition:transform .3s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column}
+  aside.open{transform:none;box-shadow:-20px 0 60px rgba(15,17,21,.18)}
+  .dh{display:flex;align-items:center;justify-content:space-between;padding:22px 24px;border-bottom:1px solid var(--line)}
+  .dh h2{margin:0;font-size:20px;letter-spacing:-.02em}
+  .x{width:36px;height:36px;border-radius:50%;font-size:20px}.x:hover{background:var(--soft)}
+  .free{padding:16px 24px;background:var(--soft);font-size:13px;color:var(--ink2)}
+  .free .bar{height:6px;border-radius:99px;background:#e1e4ec;margin-top:9px;overflow:hidden}
+  .free .bar i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .4s}
+  .free.done{background:#ecf8f1;color:#0b6b3b}.free.done .bar i{background:var(--ok)}
+  .lines{flex:1;overflow:auto;padding:4px 24px}
+  .line{display:grid;grid-template-columns:72px 1fr auto;gap:14px;align-items:center;padding:16px 0;border-bottom:1px solid var(--line)}
+  .line .th{width:72px;height:72px;border-radius:14px;object-fit:cover;background:var(--soft)}
+  .line .t{font-weight:600;font-size:14px}.line small{display:block;color:var(--muted);font-weight:400;margin-top:3px;font-size:13px}
+  .line b{font-size:14px}
+  .none{text-align:center;color:var(--muted);padding:70px 0;font-size:14px}.none div{font-size:44px;margin-bottom:10px}
+  .sum{padding:20px 24px 24px;border-top:1px solid var(--line);display:grid;gap:9px;font-size:14px;color:var(--ink2)}
+  .sum .r{display:flex;justify-content:space-between}.sum .d{color:var(--ok)}
+  .sum .tot{font-size:18px;font-weight:700;color:var(--ink);padding-top:10px;border-top:1px solid var(--line);margin-top:2px}
+  .sum .btn{justify-content:center;width:100%;margin-top:6px}
+  .linkbtn{color:var(--muted);font-size:13px;text-align:center;margin-top:2px}.linkbtn:hover{color:var(--ink)}
+  .btn:disabled{opacity:.6;cursor:wait}
+
+  .toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,120px);background:var(--ink);color:#fff;border-radius:14px;padding:13px 18px;font-size:14px;z-index:70;transition:.3s;max-width:90vw;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+  .toast.show{transform:translate(-50%,0)}.toast.bad{background:var(--bad)}
+  .modal{position:fixed;inset:0;display:grid;place-items:center;z-index:60;background:rgba(15,17,21,.5);opacity:0;pointer-events:none;transition:.25s}
+  .modal.on{opacity:1;pointer-events:auto}
+  .rc{background:#fff;border-radius:24px;padding:36px;width:380px;max-width:92vw;text-align:center;transform:scale(.95);transition:.25s}
+  .modal.on .rc{transform:none}
+  .tick{width:64px;height:64px;border-radius:50%;background:#e6f6ec;color:var(--ok);display:grid;place-items:center;font-size:30px;margin:0 auto 14px}
+  .rc h3{margin:0 0 4px;font-size:22px;letter-spacing:-.02em}.rc p{color:var(--ink2);font-size:14px;margin:0 0 20px}
+  .rc .k{display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
+
+  @media(max-width:860px){
+    .hero-in{grid-template-columns:1fr;padding:36px 26px}.hero h1{font-size:40px}.orb{height:260px}
+    .links,.search{display:none}.trust{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="announce">Free delivery on every order · <b>10% off baskets of ₹5,000 or more</b>, applied automatically</div>
+<header><div class="wrap nav">
+  <a class="logo" href="#"><i><svg class="ico w" viewBox="0 0 24 24" ><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></i>volt</a>
+  <nav class="links"><a href="#shop" data-cat="All">Shop all</a><a href="#shop" data-cat="Audio">Audio</a><a href="#shop" data-cat="Desk">Desk</a><a href="#shop" data-cat="Accessories">Accessories</a></nav>
+  <div class="grow"></div>
+  <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" placeholder="Search products" autocomplete="off"></label>
+  <button class="cartbtn" id="cartbtn" aria-label="Open cart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1 12H7L6 7Z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span class="badge" id="count">0</span></button>
+</div></header>
+
+<main>
+  <section class="wrap hero"><div class="hero-in">
+    <div>
+      <span class="eyebrow"><svg class="ico s" viewBox="0 0 24 24" ><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></svg> New season essentials</span>
+      <h1>Gear for people who build things.</h1>
+      <p>Considered hardware for your desk, your calls and your focus. Fast delivery, easy returns.</p>
+      <div class="cta"><a class="btn p" href="#shop">Shop the collection →</a><button class="btn s" onclick="openCart()">View cart</button></div>
+    </div>
+    <div class="orb"><div class="disc"></div><img class="big" src="/img/1.jpg" alt="Wireless Headphones">
+      <div class="float a"><i></i>In stock, ships today</div><div class="float b"><svg class="ico s" viewBox="0 0 24 24" ><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg> Editor's pick</div></div>
+  </div></section>
+
+  <section class="wrap"><div class="trust">
+    <div><span><svg class="ico" viewBox="0 0 24 24" ><path d="M1 6h13v10H1z"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="5.5" cy="18" r="2"/><circle cx="17.5" cy="18" r="2"/></svg></span><div><b>Free delivery</b>On every order</div></div>
+    <div><span><svg class="ico" viewBox="0 0 24 24" ><path d="M3 7v6h6"/><path d="M3.5 13a8.5 8.5 0 1 0 2.2-6.3L3 9"/></svg></span><div><b>7-day returns</b>No questions asked</div></div>
+    <div><span><svg class="ico" viewBox="0 0 24 24" ><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></svg></span><div><b>Secure checkout</b>Encrypted payments</div></div>
+  </div></section>
+
+  <section class="wrap section" id="shop">
+    <div class="sec-h"><div><h2>Shop all</h2><p id="sub">Loading the catalogue…</p></div><div class="chips" id="chips"></div></div>
+    <div class="grid" id="grid"></div>
+  </section>
+</main>
+
+<footer><div class="wrap"><span>© 2026 Volt Store. Demo storefront for ReviewMind AIDevOps.</span><span>Microservices: catalog · inventory · cart · payments · orders</span></div></footer>
+
+<div class="scrim" id="scrim"></div>
+<aside id="drawer" aria-label="Cart">
+  <div class="dh"><h2>Your cart</h2><button class="x" id="close" aria-label="Close">×</button></div>
+  <div class="free" id="free"></div>
+  <div class="lines" id="lines"></div>
+  <div class="sum" id="sum"></div>
+</aside>
+<div class="modal" id="modal"><div class="rc" id="receipt"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+let USER; try { USER = "guest-" + (localStorage.vu ||= Math.random().toString(36).slice(2, 7)); } catch { USER = "guest-" + Math.random().toString(36).slice(2, 7); }
+const rs = n => "₹" + Number(n).toLocaleString("en-IN", {maximumFractionDigits: 2});
+const THRESHOLD = 5000;
+let products = [], stocks = {}, cat = "All", query = "", toastT;
+const TAGS = {1: "Best seller", 2: "Popular", 4: "New"};
+
+function toast(msg, bad) { const t = $("toast"); t.textContent = msg; t.className = "toast show" + (bad ? " bad" : ""); clearTimeout(toastT); toastT = setTimeout(() => t.className = "toast", 3400); }
+
+async function api(path, opts) {
+  const svc = path.split("/")[1];
+  try {
+    const r = await fetch("/api" + path, opts);
+    let data = null; try { data = await r.json(); } catch {}
+    if (!r.ok) return {ok: false, svc, status: r.status, msg: (data && (data.error || data.detail)) || ("HTTP " + r.status)};
+    return {ok: true, data};
+  } catch { return {ok: false, svc, status: 0, msg: "network error"}; }
+}
+const fail = r => toast(r.status >= 500 || r.status === 0 ? `Something went wrong on our side (${r.svc} service). Please try again.` : r.msg, true);
+
+function renderChips() {
+  const cats = ["All", ...new Set(products.map(p => p.category))];
+  $("chips").innerHTML = cats.map(c => `<button class="chip ${c === cat ? "on" : ""}" data-c="${c}">${c}</button>`).join("");
+}
+function renderGrid() {
+  const list = products.filter(p => (cat === "All" || p.category === cat) && p.name.toLowerCase().includes(query));
+  $("sub").textContent = `${list.length} product${list.length === 1 ? "" : "s"}`;
+  if (!list.length) { $("grid").innerHTML = `<div class="empty">No products match your search.</div>`; return; }
+  $("grid").innerHTML = list.map(p => {
+    const s = stocks[p.id];
+    const [cls, txt] = s == null ? ["na", "Availability unknown"] : s === 0 ? ["out", "Sold out"] : s < 10 ? ["low", `Only ${s} left`] : ["", "In stock"];
+    return `<article class="card"><div class="pic cat-${p.category.toLowerCase()}">
+      ${TAGS[p.id] ? `<span class="tag">${TAGS[p.id]}</span>` : ""}<img class="em" src="${p.image}" alt="${p.name}" loading="lazy">
+      <button class="quick" ${s === 0 ? "disabled" : ""} onclick="add(${p.id}, this)">${s === 0 ? "Sold out" : "Add to cart"}</button></div>
+      <div class="meta"><div class="row"><span class="name">${p.name}</span><span class="price">${rs(p.price)}</span></div>
+      <span class="cat">${p.category}</span><span class="st ${cls}"><i></i>${txt}</span></div></article>`;
+  }).join("");
+}
+function skeleton() { $("grid").innerHTML = Array(6).fill('<div><div class="skel"></div></div>').join(""); }
+
+async function loadProducts(quiet) {
+  if (!quiet) skeleton();
+  const r = await api("/catalog/products");
+  if (!r.ok) {
+    $("sub").textContent = "Catalogue unavailable";
+    $("chips").innerHTML = "";
+    $("grid").innerHTML = `<div class="err"><h3>We can't load the shop right now</h3>
+      <p>The ${r.svc} service isn't responding (${r.msg}). Please try again in a moment.</p>
+      <button class="btn p" onclick="loadProducts()">Try again</button></div>`;
+    return;
+  }
+  products = r.data;
+  const res = await Promise.all(products.map(p => api("/inventory/stock/" + p.id)));
+  stocks = {}; res.forEach((x, i) => { if (x.ok) stocks[products[i].id] = x.data.in_stock; });
+  renderChips(); renderGrid();
+}
+
+async function add(id, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = "Adding…"; }
+  const r = await api(`/cart/cart/${USER}/add`, {method: "POST", headers: {"content-type": "application/json"}, body: JSON.stringify({product_id: id, qty: 1})});
+  if (btn) { btn.disabled = false; btn.textContent = "Add to cart"; }
+  if (!r.ok) return fail(r);
+  toast("Added to cart"); loadCart();
+}
+
+async function loadCart() {
+  const r = await api("/cart/cart/" + USER);
+  if (!r.ok) {
+    $("count").textContent = "!"; $("free").style.display = "none";
+    $("lines").innerHTML = `<div class="none"><div><svg class="ico xl" viewBox="0 0 24 24" ><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg></div>We couldn't load your cart.<br>Please try again in a moment.</div>`;
+    $("sum").innerHTML = ""; return;
+  }
+  const c = r.data, qty = c.items.reduce((a, i) => a + i.qty, 0);
+  $("count").textContent = qty; $("count").style.display = qty ? "grid" : "none";
+  const cls = id => "cat-" + ((products.find(p => p.id === id) || {}).category || "desk").toLowerCase();
+  $("free").style.display = c.items.length ? "block" : "none";
+  const left = THRESHOLD - c.subtotal;
+  $("free").className = "free" + (left <= 0 ? " done" : "");
+  $("free").innerHTML = (left <= 0 ? `<span class="oksvg"><svg class="ico s" viewBox="0 0 24 24" ><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16 9.5"/></svg></span> You've unlocked <b>10% off</b> this order` : `Add <b>${rs(left)}</b> more to unlock <b>10% off</b>`) +
+    `<div class="bar"><i style="width:${Math.min(100, c.subtotal / THRESHOLD * 100)}%"></i></div>`;
+  $("lines").innerHTML = c.items.length ? c.items.map(i => `<div class="line"><img class="th" src="${i.image}" alt="">
+    <div class="t">${i.name}<small>Qty ${i.qty} · ${rs(i.price)} each</small></div><b>${rs(i.line_total)}</b></div>`).join("")
+    : `<div class="none"><div><svg class="ico xl" viewBox="0 0 24 24" ><path d="M6 7h12l-1 13H7L6 7Z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg></div>Your cart is empty.<br>Find something you'll love.</div>`;
+  $("sum").innerHTML = c.items.length ? `<div class="r"><span>Subtotal</span><span>${rs(c.subtotal)}</span></div>
+    ${c.discount ? `<div class="r d"><span>Bulk discount (10%)</span><span>− ${rs(c.discount)}</span></div>` : ""}
+    <div class="r"><span>Delivery</span><span>Free</span></div>
+    <div class="r tot"><span>Total</span><span>${rs(c.total)}</span></div>
+    <button class="btn p" id="co" onclick="checkout()">Checkout securely</button>
+    <button class="linkbtn" onclick="clearCart()">Clear cart</button>` : "";
+}
+async function clearCart() { await api("/cart/cart/" + USER, {method: "DELETE"}); loadCart(); }
+async function checkout() {
+  const b = $("co"); b.disabled = true; b.textContent = "Processing…";
+  const r = await api("/orders/checkout/" + USER, {method: "POST"});
+  if (!r.ok) { b.disabled = false; b.textContent = "Checkout securely"; return fail(r); }
+  const o = r.data;
+  $("receipt").innerHTML = `<div class="tick"><svg class="ico l" viewBox="0 0 24 24" ><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16 9.5"/></svg></div><h3>Order confirmed</h3><p>Thank you for shopping with Volt.</p>
+    <div class="k"><span>Order</span><b>${o.order_id}</b></div><div class="k"><span>Status</span><b>${o.status}</b></div>
+    <div class="k"><span>Charged</span><b>${rs(o.total)}</b></div>
+    <button class="btn p" style="margin-top:18px;width:100%;justify-content:center" onclick="closeModal()">Continue shopping</button>`;
+  closeCart(); $("modal").classList.add("on"); loadCart(); loadProducts(true);
+}
+const closeModal = () => $("modal").classList.remove("on");
+function openCart() { $("drawer").classList.add("open"); $("scrim").classList.add("on"); loadCart(); }
+function closeCart() { $("drawer").classList.remove("open"); $("scrim").classList.remove("on"); }
+
+$("cartbtn").onclick = openCart; $("close").onclick = closeCart; $("scrim").onclick = closeCart;
+document.addEventListener("keydown", e => { if (e.key === "Escape") { closeCart(); closeModal(); } });
+$("chips").onclick = e => { const c = e.target.dataset.c; if (c) { cat = c; renderChips(); renderGrid(); } };
+document.querySelectorAll(".links a").forEach(a => a.onclick = () => { cat = a.dataset.cat; renderChips(); renderGrid(); });
+$("q").oninput = e => { query = e.target.value.trim().toLowerCase(); renderGrid(); };
+loadProducts(); loadCart();
+setInterval(() => { if (!$("drawer").classList.contains("open")) loadProducts(true); }, 10000);
+</script>
+</body>
+</html>

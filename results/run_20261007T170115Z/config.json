@@ -1,0 +1,20 @@
+{
+  "timestamp_utc": "20261007T170115Z",
+  "arms": [
+    "static"
+  ],
+  "mode": "mock",
+  "repeats": 1,
+  "top_k": 6,
+  "retriever": null,
+  "n_cases": 14,
+  "n_records": 14,
+  "complete": true,
+  "injection_mode_filter": null,
+  "model": null,
+  "git_commit": "not-a-git-repo",
+  "python": "3.12.15",
+  "platform": "Linux-aarch64",
+  "valid_for_reporting": true,
+  "validity_note": "All responses came from a live model."
+}

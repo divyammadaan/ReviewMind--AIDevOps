@@ -1,0 +1,21 @@
+{
+  "case_id": "off_by_one_001",
+  "defect_class": "off_by_one",
+  "target_file": "app/utils.py",
+  "find": "    return text[: limit - 3] + \"...\"",
+  "replace": "    return text[: limit - 2] + \"...\"",
+  "description": "truncate() returns a string one character longer than `limit`.",
+  "why_wrong": "Slicing to limit-2 and appending a 3-character ellipsis yields limit+1 characters, violating the function's documented contract that output is at most `limit` characters. Breaks fixed-width callers.",
+  "requires_cross_file_context": false,
+  "static_analysis_expected": false,
+  "injection_mode": "deletion",
+  "tags": [
+    "logic"
+  ],
+  "injected_line": 16,
+  "injected_span": [
+    16,
+    16
+  ],
+  "diff": "--- a/app/utils.py\n+++ b/app/utils.py\n@@ -13,7 +13,7 @@\n     \"\"\"Shorten text to `limit` characters, appending an ellipsis when cut.\"\"\"\n     if len(text) <= limit:\n         return text\n-    return text[: limit - 3] + \"...\"\n+    return text[: limit - 2] + \"...\"\n \n \n def percent(part: int, whole: int) -> float:\n"
+}

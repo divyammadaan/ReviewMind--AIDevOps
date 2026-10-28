@@ -1,0 +1,292 @@
+[
+  {
+    "arm": "static",
+    "case_id": "hardcoded_secret_001",
+    "issues": [
+      {
+        "file": "/app/experiments/dataset/cases/hardcoded_secret_001/after/app/db.py",
+        "line": 6,
+        "severity": "high",
+        "category": "security",
+        "message": "Possible hardcoded password assigned to: \"DB_PASSWORD\"",
+        "suggestion": "",
+        "source": "ruff",
+        "rule_id": "S105"
+      },
+      {
+        "file": "/app/experiments/dataset/cases/hardcoded_secret_001/after/app/db.py",
+        "line": 7,
+        "severity": "high",
+        "category": "security",
+        "message": "Possible hardcoded password assigned to: \"API_TOKEN\"",
+        "suggestion": "",
+        "source": "ruff",
+        "rule_id": "S105"
+      },
+      {
+        "file": "/app/experiments/dataset/cases/hardcoded_secret_001/after/app/db.py",
+        "line": 15,
+        "severity": "medium",
+        "category": "lint",
+        "message": "Line too long (89 > 88)",
+        "suggestion": "",
+        "source": "ruff",
+        "rule_id": "E501"
+      }
+    ],
+    "test_suggestions": [],
+    "latency_s": 0.251,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "static",
+    "case_id": "bare_except_001",
+    "issues": [
+      {
+        "file": "/app/experiments/dataset/cases/bare_except_001/after/app/utils.py",
+        "line": 11,
+        "severity": "medium",
+        "category": "lint",
+        "message": "Do not use bare `except`",
+        "suggestion": "",
+        "source": "ruff",
+        "rule_id": "E722"
+      },
+      {
+        "file": "/app/experiments/dataset/cases/bare_except_001/after/app/utils.py",
+        "line": 11,
+        "severity": "high",
+        "category": "security",
+        "message": "`try`-`except`-`pass` detected, consider logging the exception",
+        "suggestion": "",
+        "source": "ruff",
+        "rule_id": "S110"
+      }
+    ],
+    "test_suggestions": [],
+    "latency_s": 0.236,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "static",
+    "case_id": "sql_injection_001",
+    "issues": [
+      {
+        "file": "/app/experiments/dataset/cases/sql_injection_001/after/app/db.py",
+        "line": 11,
+        "severity": "medium",
+        "category": "lint",
+        "message": "Line too long (89 > 88)",
+        "suggestion": "",
+        "source": "ruff",
+        "rule_id": "E501"
+      },
+      {
+        "file": "/app/experiments/dataset/cases/sql_injection_001/after/app/db.py",
+        "line": 34,
+        "severity": "high",
+        "category": "security",
+        "message": "Possible SQL injection vector through string-based query construction",
+        "suggestion": "",
+        "source": "ruff",
+        "rule_id": "S608"
+      }
+    ],
+    "test_suggestions": [],
+    "latency_s": 0.241,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "static",
+    "case_id": "off_by_one_001",
+    "issues": [],
+    "test_suggestions": [],
+    "latency_s": 0.235,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "static",
+    "case_id": "off_by_one_002",
+    "issues": [],
+    "test_suggestions": [],
+    "latency_s": 0.24,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "static",
+    "case_id": "missing_error_handling_001",
+    "issues": [],
+    "test_suggestions": [],
+    "latency_s": 0.231,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "static",
+    "case_id": "null_deref_001",
+    "issues": [],
+    "test_suggestions": [],
+    "latency_s": 0.236,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "static",
+    "case_id": "null_deref_002",
+    "issues": [],
+    "test_suggestions": [],
+    "latency_s": 0.233,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "static",
+    "case_id": "broken_contract_001",
+    "issues": [
+      {
+        "file": "/app/experiments/dataset/cases/broken_contract_001/after/app/services/user.py",
+        "line": 28,
+        "severity": "medium",
+        "category": "lint",
+        "message": "Avoid specifying long messages outside the exception class",
+        "suggestion": "",
+        "source": "ruff",
+        "rule_id": "TRY003"
+      },
+      {
+        "file": "/app/experiments/dataset/cases/broken_contract_001/after/app/services/user.py",
+        "line": 31,
+        "severity": "medium",
+        "category": "lint",
+        "message": "Avoid specifying long messages outside the exception class",
+        "suggestion": "",
+        "source": "ruff",
+        "rule_id": "TRY003"
+      }
+    ],
+    "test_suggestions": [],
+    "latency_s": 0.238,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "static",
+    "case_id": "broken_contract_002",
+    "issues": [],
+    "test_suggestions": [],
+    "latency_s": 0.236,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "static",
+    "case_id": "add_null_deref_001",
+    "issues": [],
+    "test_suggestions": [],
+    "latency_s": 0.233,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "static",
+    "case_id": "add_null_deref_002",
+    "issues": [],
+    "test_suggestions": [],
+    "latency_s": 0.236,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "static",
+    "case_id": "add_double_scale_001",
+    "issues": [],
+    "test_suggestions": [],
+    "latency_s": 0.238,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  },
+  {
+    "arm": "static",
+    "case_id": "add_ignored_return_001",
+    "issues": [],
+    "test_suggestions": [],
+    "latency_s": 0.233,
+    "retrieval_s": 0.0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "model": "n/a (static analysis)",
+    "retriever": "n/a",
+    "errors": [],
+    "repeat": 1
+  }
+]

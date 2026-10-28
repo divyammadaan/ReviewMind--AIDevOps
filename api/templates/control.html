@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReviewMind — Demo Control</title>
+<style>
+  :root{--bg:#0f1115;--panel:#171a21;--panel2:#1d2129;--line:#2a2f3a;--fg:#e6e9ef;
+        --muted:#9aa3b2;--accent:#5b9dff;--good:#3ddc97;--bad:#ff6b6b;--warn:#ffb454}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:900px;margin:0 auto;padding:30px 18px 70px}
+  h1{margin:0 0 4px;font-size:24px;letter-spacing:-.02em}
+  .sub{color:var(--muted);font-size:14px}
+  .nav a{margin-right:16px;color:var(--accent);font-weight:600;text-decoration:none}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+        padding:20px 22px;margin:16px 0}
+  .status{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .dot{width:12px;height:12px;border-radius:50%;flex:none}
+  .dot.broken{background:var(--bad);box-shadow:0 0 12px var(--bad)}
+  .dot.working{background:var(--good);box-shadow:0 0 12px var(--good)}
+  .dot.unknown{background:var(--muted)}
+  .state{font-size:19px;font-weight:650}
+  .charge{margin-left:auto;font-size:14px;color:var(--muted)}
+  .charge b{font-size:22px;color:var(--fg);font-variant-numeric:tabular-nums}
+  .steps{display:grid;gap:12px}
+  .step{display:grid;grid-template-columns:36px 1fr auto;gap:14px;align-items:center;
+        background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .n{width:28px;height:28px;border-radius:50%;background:var(--line);
+     display:grid;place-items:center;font-size:13px;font-weight:700;color:var(--muted)}
+  .step h3{margin:0;font-size:15px;font-weight:600}
+  .step p{margin:2px 0 0;font-size:13px;color:var(--muted)}
+  button{background:var(--accent);color:#06101f;border:0;border-radius:8px;
+         padding:9px 16px;font-weight:650;font-size:14px;cursor:pointer;white-space:nowrap}
+  button.danger{background:var(--bad);color:#2a0b0b}
+  button.good{background:var(--good);color:#04231a}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  a.btn{display:inline-block;background:var(--panel);border:1px solid var(--line);
+        color:var(--fg);border-radius:8px;padding:8px 15px;text-decoration:none;
+        font-size:14px;font-weight:600;white-space:nowrap}
+  #log{background:#0b0d11;border:1px solid var(--line);border-radius:10px;
+       padding:14px 16px;font:12.5px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;
+       white-space:pre-wrap;min-height:90px;max-height:330px;overflow:auto;color:var(--muted)}
+  #log b{color:var(--fg)} #log .ok{color:var(--good)} #log .err{color:var(--bad)}
+  #log .warn{color:var(--warn)}
+  .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line);
+        border-top-color:var(--accent);border-radius:50%;animation:s .7s linear infinite;
+        vertical-align:-2px}
+  @keyframes s{to{transform:rotate(360deg)}}
+</style></head><body><div class="wrap">
+
+<h1>ReviewMind — Demo Control</h1>
+<div class="sub">Run the whole demonstration from here. No terminal needed.</div>
+<div class="nav" style="margin-top:12px">
+  <a href="/">Results dashboard</a><a href="/demo">Live review</a>
+  <a href="http://localhost:9000/shop?customer=101" target="_blank">Open the shop ↗</a>
+</div>
+
+<div class="card">
+  <div class="status">
+    <span class="dot {{ state }}" id="dot"></span>
+    <span class="state" id="state">{{ state }}</span>
+    <span class="charge">charging a ₹1,000 order &nbsp;<b id="charge">–</b></span>
+  </div>
+</div>
+
+<div class="steps">
+  <div class="step">
+    <span class="n">1</span>
+    <div><h3>Break the checkout</h3>
+      <p>Reintroduce the defect, so the customer is overcharged.</p></div>
+    <button class="danger" id="bBreak">Break it</button>
+  </div>
+
+  <div class="step">
+    <span class="n">2</span>
+    <div><h3>See it on the shop page</h3>
+      <p>The receipt shows what the customer is actually asked to pay.</p></div>
+    <a class="btn" href="http://localhost:9000/shop?customer=101" target="_blank">Open shop ↗</a>
+  </div>
+
+  <div class="step">
+    <span class="n">3</span>
+    <div><h3>Review the pull request</h3>
+      <p>ReviewMind reads PR #<span id="prn">7</span> on GitHub and posts its comments.</p></div>
+    <button id="bReview">Review PR</button>
+  </div>
+
+  <div class="step">
+    <span class="n">4</span>
+    <div><h3>Open the pull request</h3>
+      <p>See the comments ReviewMind left on the code.</p></div>
+    <a class="btn" id="prLink" href="https://github.com/{{ repo }}/pull/{{ demo_pr }}" target="_blank">Open PR ↗</a>
+  </div>
+
+  <div class="step">
+    <span class="n">5</span>
+    <div><h3>Let ReviewMind fix it</h3>
+      <p>It writes the fix and applies it to the service.</p></div>
+    <button class="good" id="bFix">Fix it</button>
+  </div>
+</div>
+
+<div class="card" style="padding:0;background:transparent;border:0">
+  <div id="log">Ready.</div>
+</div>
+
+<h3 style="font-size:13px;margin:26px 0 10px;color:var(--muted);
+           text-transform:uppercase;letter-spacing:.06em;font-weight:600">
+  Ask the codebase
+</h3>
+<div class="card">
+  <p class="sub" style="margin:0 0 12px">
+    The same retrieval, answering questions instead of reviewing. Answers are
+    grounded in the code it fetched, and cite where they came from.
+  </p>
+  <div style="margin-bottom:10px">
+    <button class="ghost qp">What does discount_percent return — a percentage or a fraction?</button>
+    <button class="ghost qp">What happens if a customer does not exist?</button>
+    <button class="ghost qp">How is GST applied to an order?</button>
+  </div>
+  <div style="display:flex;gap:10px">
+    <input id="q" placeholder="Ask anything about the codebase…"
+      style="flex:1;background:var(--panel2);color:var(--fg);border:1px solid var(--line);
+             border-radius:8px;padding:10px 12px;font-size:14px">
+    <button id="bAsk">Ask</button>
+  </div>
+  <div id="ans" style="margin-top:14px"></div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const PR = {{ demo_pr }};
+$('prn').textContent = PR;
+
+function log(html, cls){
+  const el = $('log');
+  el.innerHTML += `\n${cls?`<span class="${cls}">`:''}${html}${cls?'</span>':''}`;
+  el.scrollTop = el.scrollHeight;
+}
+function clearLog(t){ $('log').innerHTML = t || ''; }
+
+async function refresh(){
+  try{
+    const s = await (await fetch('/api/demo/status')).json();
+    $('dot').className = 'dot ' + s.state;
+    $('state').textContent = s.state === 'broken' ? 'Checkout is BROKEN'
+                        : s.state === 'working' ? 'Checkout is working'
+                        : 'state unknown';
+    $('charge').textContent = s.shop_up
+      ? '₹' + Number(s.checkout_total).toLocaleString('en-IN',{minimumFractionDigits:2})
+      : 'shop not running';
+  }catch(e){ $('state').textContent = 'control server unreachable'; }
+}
+
+function busy(btn, on){ btn.disabled = on; }
+
+$('bBreak').onclick = async () => {
+  busy($('bBreak'), true);
+  clearLog('<span class="warn">Reintroducing the defect…</span>');
+  try{
+    const r = await (await fetch('/api/demo/break', {method:'POST'})).json();
+    log(r.ok ? `<b>Done.</b> The checkout is now ${r.state}.` : `Failed: ${r.error}`,
+        r.ok ? 'warn' : 'err');
+    if(r.ok) log('Open the shop page — it should show the wrong total.');
+  }catch(e){ log('Error: '+e.message,'err'); }
+  busy($('bBreak'), false); refresh();
+};
+
+$('bReview').onclick = async () => {
+  busy($('bReview'), true);
+  clearLog('<span class="spin"></span> Fetching the pull request and reviewing…');
+  try{
+    const r = await (await fetch('/api/demo/review', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({pr: PR, post: true})
+    })).json();
+    if(!r.ok && r.error){ log('Failed: '+r.error,'err'); }
+    else{
+      log(`<b>${r.issues.length} issue(s) found</b> in ${r.latency_s}s`,'ok');
+      r.issues.forEach(i => log(`  [${i.severity.toUpperCase()}] line ${i.line}\n    ${i.message}`));
+      (r.test_suggestions||[]).forEach(t => log(`  [TEST] ${t.name}`));
+      if(r.posted) log(`\nPosted to GitHub: ${r.posted.inline} inline comment(s), summary ${r.posted.summary?'yes':'no'}`,'ok');
+      log(`\nOpen the pull request to see them.`);
+    }
+  }catch(e){ log('Error: '+e.message,'err'); }
+  busy($('bReview'), false);
+};
+
+$('bFix').onclick = async () => {
+  busy($('bFix'), true);
+  clearLog('<span class="spin"></span> Asking ReviewMind to write a fix…');
+  try{
+    const r = await (await fetch('/api/demo/fix', {method:'POST'})).json();
+    if(!r.ok){ log('No fix applied: '+(r.error || JSON.stringify(r.rejected||[])),'err'); }
+    else{
+      log(`<b>Reasoning:</b> ${r.reasoning}`);
+      log(`\n<b>Applied to:</b> ${r.applied.join(', ')} (${r.latency_s}s)`,'ok');
+      (r.tests||[]).forEach(t => log(`  suggested test: ${t}`));
+      log(`\nRefresh the shop page — the total should now be correct.`,'ok');
+    }
+  }catch(e){ log('Error: '+e.message,'err'); }
+  busy($('bFix'), false); refresh();
+};
+
+document.querySelectorAll('.qp').forEach(b => {
+  b.onclick = () => { $('q').value = b.textContent.trim(); $('bAsk').click(); };
+});
+
+$('bAsk').onclick = async () => {
+  const q = $('q').value.trim();
+  if(!q){ return; }
+  $('bAsk').disabled = true;
+  $('ans').innerHTML = '<span class="spin"></span> <span class="sub">retrieving and answering…</span>';
+  try{
+    const r = await (await fetch('/api/ask', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({question: q})
+    })).json();
+    const cites = (r.citations||[]).slice(0,4)
+      .map(c => `<span class="tagc">${c.file}:${c.name}</span>`).join(' ');
+    $('ans').innerHTML = `
+      <div style="background:var(--panel2);border-radius:8px;padding:13px 15px">
+        ${(r.answer||'(no answer)').replace(/</g,'&lt;').replace(/\n/g,'<br>')}
+      </div>
+      <div class="sub" style="margin-top:9px">Answered from: ${cites}</div>
+      <div class="meta">${r.latency_s}s · retrieval: ${r.retriever||'n/a'}</div>`;
+  }catch(e){ $('ans').innerHTML = `<span style="color:var(--bad)">Error: ${e.message}</span>`; }
+  $('bAsk').disabled = false;
+};
+$('q').addEventListener('keydown', e => { if(e.key === 'Enter') $('bAsk').click(); });
+
+refresh(); setInterval(refresh, 4000);
+</script>
+</div></body></html>

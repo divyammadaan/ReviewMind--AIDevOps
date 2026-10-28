@@ -1,0 +1,22 @@
+{
+  "case_id": "broken_contract_001",
+  "defect_class": "broken_contract",
+  "target_file": "app/services/user.py",
+  "find": "def update_email(user_id: int, new_email: str) -> bool:\n    \"\"\"Change a user's email. Returns False when the user or email is invalid.\"\"\"\n    if not is_valid_email(new_email):\n        return False\n    user = get_user(user_id)\n    if user is None:\n        return False\n    user[\"email\"] = new_email\n    return True",
+  "replace": "def update_email(user_id: int, new_email: str) -> bool:\n    \"\"\"Change a user's email. Returns False when the user or email is invalid.\"\"\"\n    if not is_valid_email(new_email):\n        raise ValueError(\"invalid email\")\n    user = get_user(user_id)\n    if user is None:\n        raise LookupError(\"no such user\")\n    user[\"email\"] = new_email\n    return True",
+  "description": "update_email() switched from returning False to raising, breaking its caller.",
+  "why_wrong": "app/api.py's handle_update_email() checks the boolean return to produce a 400 response. It has no try/except, so invalid input now propagates an uncaught exception instead of a 400. The function's new behaviour is internally coherent -- the defect is only visible from the caller, in another file.",
+  "requires_cross_file_context": true,
+  "static_analysis_expected": false,
+  "injection_mode": "deletion",
+  "tags": [
+    "api_contract",
+    "cross_file"
+  ],
+  "injected_line": 28,
+  "injected_span": [
+    28,
+    31
+  ],
+  "diff": "--- a/app/services/user.py\n+++ b/app/services/user.py\n@@ -25,10 +25,10 @@\n def update_email(user_id: int, new_email: str) -> bool:\n     \"\"\"Change a user's email. Returns False when the user or email is invalid.\"\"\"\n     if not is_valid_email(new_email):\n-        return False\n+        raise ValueError(\"invalid email\")\n     user = get_user(user_id)\n     if user is None:\n-        return False\n+        raise LookupError(\"no such user\")\n     user[\"email\"] = new_email\n     return True\n \n"
+}

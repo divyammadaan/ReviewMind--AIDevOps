@@ -1,0 +1,23 @@
+{
+  "case_id": "broken_contract_002",
+  "defect_class": "broken_contract",
+  "target_file": "app/services/task.py",
+  "find": "def completion_ratio(user_id: int) -> float:\n    \"\"\"Percentage of the user's tasks that are done.\"\"\"\n    tasks = list_user_tasks(user_id)\n    if not tasks:\n        return 0.0\n    done = sum(1 for t in tasks if t[\"done\"])\n    return (done / len(tasks)) * 100.0",
+  "replace": "def completion_ratio(user_id: int) -> float:\n    \"\"\"Percentage of the user's tasks that are done.\"\"\"\n    tasks = list_user_tasks(user_id)\n    if not tasks:\n        return 0.0\n    done = sum(1 for t in tasks if t[\"done\"])\n    return done / len(tasks)",
+  "description": "completion_ratio() now returns a 0-1 fraction while still documented as a percentage.",
+  "why_wrong": "The docstring and the function name promise a percentage, and app/api.py surfaces this value as `completion` in a user-facing summary. Returning 0.5 instead of 50.0 silently corrupts that output -- no exception, just wrong numbers.",
+  "requires_cross_file_context": true,
+  "static_analysis_expected": false,
+  "injection_mode": "deletion",
+  "tags": [
+    "api_contract",
+    "silent_corruption",
+    "cross_file"
+  ],
+  "injected_line": 35,
+  "injected_span": [
+    35,
+    35
+  ],
+  "diff": "--- a/app/services/task.py\n+++ b/app/services/task.py\n@@ -32,7 +32,7 @@\n     if not tasks:\n         return 0.0\n     done = sum(1 for t in tasks if t[\"done\"])\n-    return (done / len(tasks)) * 100.0\n+    return done / len(tasks)\n \n \n def top_priority(user_id: int) -> Optional[dict[str, Any]]:\n"
+}

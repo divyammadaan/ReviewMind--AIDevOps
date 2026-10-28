@@ -1,0 +1,22 @@
+{
+  "case_id": "missing_error_handling_001",
+  "defect_class": "missing_error_handling",
+  "target_file": "app/utils.py",
+  "find": "def percent(part: int, whole: int) -> float:\n    \"\"\"Return part/whole as a percentage. Returns 0.0 when whole is zero.\"\"\"\n    if whole == 0:\n        return 0.0\n    return (part / whole) * 100.0",
+  "replace": "def percent(part: int, whole: int) -> float:\n    \"\"\"Return part/whole as a percentage. Returns 0.0 when whole is zero.\"\"\"\n    return (part / whole) * 100.0",
+  "description": "Zero-division guard removed from percent(), contradicting its own docstring.",
+  "why_wrong": "percent(x, 0) now raises ZeroDivisionError. The docstring still promises 0.0, so callers written against the documented behaviour will crash.",
+  "requires_cross_file_context": false,
+  "static_analysis_expected": false,
+  "injection_mode": "deletion",
+  "tags": [
+    "error_handling",
+    "logic"
+  ],
+  "injected_line": 21,
+  "injected_span": [
+    21,
+    21
+  ],
+  "diff": "--- a/app/utils.py\n+++ b/app/utils.py\n@@ -18,6 +18,4 @@\n \n def percent(part: int, whole: int) -> float:\n     \"\"\"Return part/whole as a percentage. Returns 0.0 when whole is zero.\"\"\"\n-    if whole == 0:\n-        return 0.0\n     return (part / whole) * 100.0\n"
+}

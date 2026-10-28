@@ -1,0 +1,188 @@
+{
+  "n_cases": 14,
+  "corpus": "experiments/corpus/taskapi",
+  "cases": [
+    {
+      "case_id": "hardcoded_secret_001",
+      "defect_class": "hardcoded_secret",
+      "target_file": "app/db.py",
+      "injected_line": 4,
+      "injected_span": [
+        4,
+        7
+      ],
+      "requires_cross_file_context": false,
+      "static_analysis_expected": true,
+      "injection_mode": "deletion"
+    },
+    {
+      "case_id": "bare_except_001",
+      "defect_class": "bare_except",
+      "target_file": "app/utils.py",
+      "injected_line": 9,
+      "injected_span": [
+        9,
+        12
+      ],
+      "requires_cross_file_context": false,
+      "static_analysis_expected": true,
+      "injection_mode": "deletion"
+    },
+    {
+      "case_id": "sql_injection_001",
+      "defect_class": "sql_injection",
+      "target_file": "app/db.py",
+      "injected_line": 30,
+      "injected_span": [
+        30,
+        37
+      ],
+      "requires_cross_file_context": false,
+      "static_analysis_expected": true,
+      "injection_mode": "deletion"
+    },
+    {
+      "case_id": "off_by_one_001",
+      "defect_class": "off_by_one",
+      "target_file": "app/utils.py",
+      "injected_line": 16,
+      "injected_span": [
+        16,
+        16
+      ],
+      "requires_cross_file_context": false,
+      "static_analysis_expected": false,
+      "injection_mode": "deletion"
+    },
+    {
+      "case_id": "off_by_one_002",
+      "defect_class": "off_by_one",
+      "target_file": "app/services/task.py",
+      "injected_line": 44,
+      "injected_span": [
+        44,
+        44
+      ],
+      "requires_cross_file_context": false,
+      "static_analysis_expected": false,
+      "injection_mode": "deletion"
+    },
+    {
+      "case_id": "missing_error_handling_001",
+      "defect_class": "missing_error_handling",
+      "target_file": "app/utils.py",
+      "injected_line": 21,
+      "injected_span": [
+        21,
+        21
+      ],
+      "requires_cross_file_context": false,
+      "static_analysis_expected": false,
+      "injection_mode": "deletion"
+    },
+    {
+      "case_id": "null_deref_001",
+      "defect_class": "null_dereference",
+      "target_file": "app/services/user.py",
+      "injected_line": 20,
+      "injected_span": [
+        20,
+        20
+      ],
+      "requires_cross_file_context": true,
+      "static_analysis_expected": false,
+      "injection_mode": "deletion"
+    },
+    {
+      "case_id": "null_deref_002",
+      "defect_class": "null_dereference",
+      "target_file": "app/services/task.py",
+      "injected_line": 20,
+      "injected_span": [
+        20,
+        20
+      ],
+      "requires_cross_file_context": true,
+      "static_analysis_expected": false,
+      "injection_mode": "deletion"
+    },
+    {
+      "case_id": "broken_contract_001",
+      "defect_class": "broken_contract",
+      "target_file": "app/services/user.py",
+      "injected_line": 28,
+      "injected_span": [
+        28,
+        31
+      ],
+      "requires_cross_file_context": true,
+      "static_analysis_expected": false,
+      "injection_mode": "deletion"
+    },
+    {
+      "case_id": "broken_contract_002",
+      "defect_class": "broken_contract",
+      "target_file": "app/services/task.py",
+      "injected_line": 35,
+      "injected_span": [
+        35,
+        35
+      ],
+      "requires_cross_file_context": true,
+      "static_analysis_expected": false,
+      "injection_mode": "deletion"
+    },
+    {
+      "case_id": "add_null_deref_001",
+      "defect_class": "null_dereference",
+      "target_file": "app/api.py",
+      "injected_line": 34,
+      "injected_span": [
+        34,
+        39
+      ],
+      "requires_cross_file_context": true,
+      "static_analysis_expected": false,
+      "injection_mode": "addition"
+    },
+    {
+      "case_id": "add_null_deref_002",
+      "defect_class": "null_dereference",
+      "target_file": "app/services/task.py",
+      "injected_line": 29,
+      "injected_span": [
+        29,
+        34
+      ],
+      "requires_cross_file_context": true,
+      "static_analysis_expected": false,
+      "injection_mode": "addition"
+    },
+    {
+      "case_id": "add_double_scale_001",
+      "defect_class": "broken_contract",
+      "target_file": "app/api.py",
+      "injected_line": 34,
+      "injected_span": [
+        34,
+        39
+      ],
+      "requires_cross_file_context": true,
+      "static_analysis_expected": false,
+      "injection_mode": "addition"
+    },
+    {
+      "case_id": "add_ignored_return_001",
+      "defect_class": "missing_error_handling",
+      "target_file": "app/api.py",
+      "injected_line": 23,
+      "injected_span": [
+        23,
+        31
+      ],
+      "requires_cross_file_context": true,
+      "static_analysis_expected": false,
+      "injection_mode": "addition"
+    }
+  ]
+}

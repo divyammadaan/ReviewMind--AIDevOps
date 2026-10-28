@@ -1,0 +1,51 @@
+# ---- Secrets: never commit these ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+token.txt
+
+# ---- Python ----
+.venv/
+.venv-tools/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+coverage.xml
+.coverage
+# cover-agent artefacts written into the corpus during test generation.
+# The GENERATED TESTS are kept (they are a deliverable); the run databases,
+# cached LLM responses and coverage data are regenerable noise.
+experiments/corpus/**/stored_responses/
+experiments/corpus/**/.pytest_cache/
+experiments/corpus/**/cover_agent_unit_test_runs.db
+experiments/corpus/**/.coverage
+**/cover_agent_unit_test_runs.db
+
+# ---- Vendored binaries (fetched by scripts/, not committed) ----
+# tools/bin/src is the 63 MB Sourcegraph CLI. Committing a binary this size
+# bloats every clone; scripts/install_sourcegraph_cli.sh fetches it instead.
+tools/bin/
+
+# ---- Project data ----
+# Generated vector index (rebuildable, large)
+data/index/
+# NOTE: results/run_*/raw/results.json IS committed deliberately -- it is the
+# primary evidence for every number in the report, and a results table without
+# the underlying per-case data is not independently checkable.
+*.log
+
+# ---- Course material ----
+# Faculty handouts are not ours to redistribute publicly. They remain on disk
+# for reference but are excluded from the repository.
+*.pdf
+
+# ---- Editor / OS ----
+.vscode/
+.idea/
+.DS_Store

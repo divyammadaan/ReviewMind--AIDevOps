@@ -1,0 +1,131 @@
+{
+  "run": "run_20261007T170115Z",
+  "config": {
+    "timestamp_utc": "20261007T170115Z",
+    "arms": [
+      "static"
+    ],
+    "mode": "mock",
+    "repeats": 1,
+    "top_k": 6,
+    "retriever": null,
+    "n_cases": 14,
+    "n_records": 14,
+    "complete": true,
+    "injection_mode_filter": null,
+    "model": null,
+    "git_commit": "not-a-git-repo",
+    "python": "3.12.15",
+    "platform": "Linux-aarch64",
+    "valid_for_reporting": true,
+    "validity_note": "All responses came from a live model."
+  },
+  "arms": {
+    "static": {
+      "arm": "static",
+      "tolerance": 3,
+      "n_cases": 14,
+      "n_detected": 4,
+      "recall": 0.2857,
+      "recall_ci95": [
+        0.1172,
+        0.5465
+      ],
+      "n_detected_semantic": 3,
+      "recall_semantic": 0.2143,
+      "recall_semantic_ci95": [
+        0.0757,
+        0.4759
+      ],
+      "precision_lower_bound": 0.4444,
+      "f1_lower_bound": 0.3478,
+      "total_issues_reported": 9,
+      "issues_per_case": 0.64,
+      "median_latency_s": 0.236,
+      "p90_latency_s": 0.241,
+      "total_tokens": 0,
+      "recall_by_class": {
+        "bare_except": {
+          "detected": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "broken_contract": {
+          "detected": 1,
+          "total": 3,
+          "recall": 0.3333
+        },
+        "hardcoded_secret": {
+          "detected": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "missing_error_handling": {
+          "detected": 0,
+          "total": 2,
+          "recall": 0.0
+        },
+        "null_dereference": {
+          "detected": 0,
+          "total": 4,
+          "recall": 0.0
+        },
+        "off_by_one": {
+          "detected": 0,
+          "total": 2,
+          "recall": 0.0
+        },
+        "sql_injection": {
+          "detected": 1,
+          "total": 1,
+          "recall": 1.0
+        }
+      },
+      "recall_by_context_need": {
+        "cross_file": {
+          "detected": 1,
+          "total": 8,
+          "recall": 0.125
+        },
+        "local": {
+          "detected": 3,
+          "total": 6,
+          "recall": 0.5
+        }
+      },
+      "recall_by_injection_mode": {
+        "addition": {
+          "detected": 0,
+          "total": 4,
+          "recall": 0.0
+        },
+        "deletion": {
+          "detected": 4,
+          "total": 10,
+          "recall": 0.4
+        }
+      },
+      "recall_cross_file_additive": [
+        0,
+        4
+      ],
+      "semantic_by_injection_mode": {
+        "addition": {
+          "detected": 0,
+          "total": 4,
+          "recall": 0.0
+        },
+        "deletion": {
+          "detected": 3,
+          "total": 10,
+          "recall": 0.3
+        }
+      },
+      "semantic_cross_file_additive": [
+        0,
+        4
+      ]
+    }
+  },
+  "n_errors": 0
+}

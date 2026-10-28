@@ -1,0 +1,21 @@
+{
+  "case_id": "sql_injection_001",
+  "defect_class": "sql_injection",
+  "target_file": "app/db.py",
+  "find": "def all_tasks() -> list[dict[str, Any]]:\n    return list(_TASKS.values())",
+  "replace": "def search_tasks(term: str) -> list[dict[str, Any]]:\n    import sqlite3\n\n    conn = sqlite3.connect(\"tasks.db\")\n    query = \"SELECT * FROM tasks WHERE title LIKE '%\" + term + \"%'\"\n    return conn.execute(query).fetchall()\n\n\ndef all_tasks() -> list[dict[str, Any]]:\n    return list(_TASKS.values())",
+  "description": "SQL query built by string concatenation with caller-supplied input.",
+  "why_wrong": "An attacker controlling `term` can terminate the literal and append arbitrary SQL. Parameterised queries are required.",
+  "requires_cross_file_context": false,
+  "static_analysis_expected": true,
+  "injection_mode": "deletion",
+  "tags": [
+    "security"
+  ],
+  "injected_line": 30,
+  "injected_span": [
+    30,
+    37
+  ],
+  "diff": "--- a/app/db.py\n+++ b/app/db.py\n@@ -27,6 +27,14 @@\n     return _TASKS.get(task_id)\n \n \n+def search_tasks(term: str) -> list[dict[str, Any]]:\n+    import sqlite3\n+\n+    conn = sqlite3.connect(\"tasks.db\")\n+    query = \"SELECT * FROM tasks WHERE title LIKE '%\" + term + \"%'\"\n+    return conn.execute(query).fetchall()\n+\n+\n def all_tasks() -> list[dict[str, Any]]:\n     return list(_TASKS.values())\n \n"
+}

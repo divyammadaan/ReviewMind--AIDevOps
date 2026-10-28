@@ -1,0 +1,92 @@
+# ReviewMind — containerised stack.
+#
+#   docker compose up -d                 reviewer + demo shop
+#   docker compose --profile tools run --rm offline      experiment, no API key
+#   docker compose --profile tools run --rm experiment   full experiment
+#   docker compose --profile tools run --rm tests        CodiumAI test generation
+#
+# Secrets come from .env, which is gitignored and never baked into an image.
+
+services:
+
+  # The project: reviewer, dashboard, live demo and control panel.
+  app:
+    build: .
+    image: reviewmind/app:latest
+    container_name: reviewmind-app
+    ports: ["8000:8000"]
+    env_file: [.env]
+    environment:
+      # Inside Compose, 127.0.0.1 would be the app container itself.
+      SHOP_URL: "http://shop:9000"
+    volumes:
+      # Results land on the host so they persist and stay inspectable.
+      - ./results:/app/results
+      # The demo corpus is SHARED with the shop container, so a fix written by
+      # the control panel is seen by the running service.
+      - ./experiments/corpus/shop:/app/experiments/corpus/shop
+    depends_on:
+      shop:
+        condition: service_started
+    restart: unless-stopped
+
+  # The subject under review: the demo Checkout API.
+  shop:
+    build:
+      context: .
+      dockerfile: Dockerfile.shop
+    image: reviewmind/shop:latest
+    container_name: reviewmind-shop
+    ports: ["9000:9000"]
+    volumes:
+      # Same host directory as the app, so edits are visible to both.
+      - ./experiments/corpus/shop:/srv
+    restart: unless-stopped
+
+  # ---- on-demand, not started by `up` -------------------------------------- #
+
+  # Static baseline + retrieval ablation. Needs NO API key.
+  offline:
+    build: .
+    image: reviewmind/app:latest
+    container_name: reviewmind-offline
+    volumes: ["./results:/app/results"]
+    profiles: ["tools"]
+    command: >
+      sh -c "python experiments/seed_bugs.py &&
+             python experiments/retrieval_ablation.py &&
+             python experiments/run_experiment.py --arms static &&
+             python experiments/analyze.py"
+
+  # The full three-arm experiment. Requires GROQ_API_KEY and takes ~20 minutes
+  # under the free tier's token limits.
+  experiment:
+    build: .
+    image: reviewmind/app:latest
+    container_name: reviewmind-experiment
+    env_file: [.env]
+    volumes: ["./results:/app/results"]
+    profiles: ["tools"]
+    command: >
+      sh -c "python experiments/seed_bugs.py &&
+             python experiments/run_experiment.py --arms static,llm_diff,llm_rag --mode live &&
+             python experiments/analyze.py"
+
+  # CodiumAI / Qodo cover-agent. Pinned to Python 3.11 because it requires
+  # <3.14; see tools/codium/Dockerfile.
+  tests:
+    build: { context: ./tools/codium }
+    image: reviewmind/cover-agent:0.3.10
+    container_name: reviewmind-tests
+    env_file: [.env]
+    volumes: ["./experiments/corpus/shop:/work"]
+    profiles: ["tools"]
+    command:
+      - --source-file-path=pricing.py
+      - --test-file-path=tests/test_pricing.py
+      - --project-root=/work
+      - --code-coverage-report-path=coverage.xml
+      - --test-command=python -m pytest tests/ --cov=. --cov-report=xml:coverage.xml
+      - --model=groq/openai/gpt-oss-20b
+      - --desired-coverage=90
+      - --max-iterations=2

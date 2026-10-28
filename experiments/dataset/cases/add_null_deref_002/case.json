@@ -1,0 +1,24 @@
+{
+  "case_id": "add_null_deref_002",
+  "defect_class": "null_dereference",
+  "target_file": "app/services/task.py",
+  "find": "def completion_ratio(user_id: int) -> float:",
+  "replace": "def task_title(task_id: int) -> str:\n    \"\"\"Return the title of a task.\"\"\"\n    task = get_task(task_id)\n    return task[\"title\"]\n\n\ndef completion_ratio(user_id: int) -> float:",
+  "description": "New function dereferences get_task() without a None check.",
+  "why_wrong": "get_task() returns db.fetch_task(), which is Optional. An unknown task id makes task[\"title\"] raise TypeError. Nothing in the added code hints at this -- the Optional contract is declared in app/db.py, outside the diff.",
+  "requires_cross_file_context": true,
+  "static_analysis_expected": false,
+  "injection_mode": "addition",
+  "tags": [
+    "logic",
+    "crash",
+    "cross_file",
+    "additive"
+  ],
+  "injected_line": 29,
+  "injected_span": [
+    29,
+    34
+  ],
+  "diff": "--- a/app/services/task.py\n+++ b/app/services/task.py\n@@ -26,6 +26,12 @@\n     return True\n \n \n+def task_title(task_id: int) -> str:\n+    \"\"\"Return the title of a task.\"\"\"\n+    task = get_task(task_id)\n+    return task[\"title\"]\n+\n+\n def completion_ratio(user_id: int) -> float:\n     \"\"\"Percentage of the user's tasks that are done.\"\"\"\n     tasks = list_user_tasks(user_id)\n"
+}

@@ -1,0 +1,24 @@
+{
+  "case_id": "add_ignored_return_001",
+  "defect_class": "missing_error_handling",
+  "target_file": "app/api.py",
+  "find": "def handle_user_summary(user_id: int) -> dict[str, Any]:",
+  "replace": "def handle_bulk_email_update(user_id: int, email: str) -> dict[str, Any]:\n    \"\"\"Update a user's email, reporting success.\"\"\"\n    try:\n        update_email(user_id, email)\n    except Exception:\n        return {\"status\": 500, \"error\": \"update failed\"}\n    return {\"status\": 200, \"data\": {\"email\": email}}\n\n\ndef handle_user_summary(user_id: int) -> dict[str, Any]:",
+  "description": "New handler ignores update_email()'s boolean failure return.",
+  "why_wrong": "update_email() signals failure by RETURNING False, not by raising (see app/services/user.py). The try/except therefore never fires, and an invalid email or unknown user is reported to the client as status 200 success. The bug is the absence of a return-value check, which is only knowable from the callee's contract in another file.",
+  "requires_cross_file_context": true,
+  "static_analysis_expected": false,
+  "injection_mode": "addition",
+  "tags": [
+    "error_handling",
+    "api_contract",
+    "cross_file",
+    "additive"
+  ],
+  "injected_line": 23,
+  "injected_span": [
+    23,
+    31
+  ],
+  "diff": "--- a/app/api.py\n+++ b/app/api.py\n@@ -20,6 +20,15 @@\n     return {\"status\": 200, \"data\": {\"email\": email}}\n \n \n+def handle_bulk_email_update(user_id: int, email: str) -> dict[str, Any]:\n+    \"\"\"Update a user's email, reporting success.\"\"\"\n+    try:\n+        update_email(user_id, email)\n+    except Exception:\n+        return {\"status\": 500, \"error\": \"update failed\"}\n+    return {\"status\": 200, \"data\": {\"email\": email}}\n+\n+\n def handle_user_summary(user_id: int) -> dict[str, Any]:\n     return {\n         \"status\": 200,\n"
+}

@@ -1,0 +1,24 @@
+{
+  "case_id": "add_null_deref_001",
+  "defect_class": "null_dereference",
+  "target_file": "app/api.py",
+  "find": "def handle_complete_task(task_id: int, actor_id: int) -> dict[str, Any]:",
+  "replace": "def handle_user_badge(user_id: int) -> dict[str, Any]:\n    \"\"\"Short display badge for a user.\"\"\"\n    user = get_user(user_id)\n    return {\"status\": 200, \"data\": {\"badge\": user[\"name\"].upper()}}\n\n\ndef handle_complete_task(task_id: int, actor_id: int) -> dict[str, Any]:",
+  "description": "New handler dereferences get_user() without a None check.",
+  "why_wrong": "get_user() -> db.fetch_user() returns None for unknown ids, so user[\"name\"] raises TypeError. Nothing in the added code hints at this; the Optional return is declared in app/db.py and app/services/user.py, both outside the diff.",
+  "requires_cross_file_context": true,
+  "static_analysis_expected": false,
+  "injection_mode": "addition",
+  "tags": [
+    "logic",
+    "crash",
+    "cross_file",
+    "additive"
+  ],
+  "injected_line": 34,
+  "injected_span": [
+    34,
+    39
+  ],
+  "diff": "--- a/app/api.py\n+++ b/app/api.py\n@@ -31,6 +31,12 @@\n     }\n \n \n+def handle_user_badge(user_id: int) -> dict[str, Any]:\n+    \"\"\"Short display badge for a user.\"\"\"\n+    user = get_user(user_id)\n+    return {\"status\": 200, \"data\": {\"badge\": user[\"name\"].upper()}}\n+\n+\n def handle_complete_task(task_id: int, actor_id: int) -> dict[str, Any]:\n     if not complete_task(task_id, actor_id):\n         return {\"status\": 403, \"error\": \"not permitted or task missing\"}\n"
+}

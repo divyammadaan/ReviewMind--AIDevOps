@@ -1,0 +1,12 @@
+.venv/
+.venv-tools/
+.git/
+__pycache__/
+**/__pycache__/
+*.pyc
+.env
+*.pdf
+tools/bin/
+.pytest_cache/
+.ruff_cache/
+*.log

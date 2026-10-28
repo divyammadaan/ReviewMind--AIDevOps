@@ -1,0 +1,23 @@
+{
+  "case_id": "null_deref_002",
+  "defect_class": "null_dereference",
+  "target_file": "app/services/task.py",
+  "find": "def complete_task(task_id: int, actor_id: int) -> bool:\n    \"\"\"Mark a task done. Only the owner or an admin may do so.\"\"\"\n    task = get_task(task_id)\n    if task is None:\n        return False\n    if task[\"owner_id\"] != actor_id and not is_admin(actor_id):",
+  "replace": "def complete_task(task_id: int, actor_id: int) -> bool:\n    \"\"\"Mark a task done. Only the owner or an admin may do so.\"\"\"\n    task = get_task(task_id)\n    if task[\"owner_id\"] != actor_id and not is_admin(actor_id):",
+  "description": "None-check removed before dereferencing get_task() result.",
+  "why_wrong": "get_task() returns db.fetch_task(), which is Optional. A request for a non-existent task id now raises TypeError instead of returning False.",
+  "requires_cross_file_context": true,
+  "static_analysis_expected": false,
+  "injection_mode": "deletion",
+  "tags": [
+    "logic",
+    "error_handling",
+    "cross_file"
+  ],
+  "injected_line": 20,
+  "injected_span": [
+    20,
+    20
+  ],
+  "diff": "--- a/app/services/task.py\n+++ b/app/services/task.py\n@@ -17,8 +17,6 @@\n def complete_task(task_id: int, actor_id: int) -> bool:\n     \"\"\"Mark a task done. Only the owner or an admin may do so.\"\"\"\n     task = get_task(task_id)\n-    if task is None:\n-        return False\n     if task[\"owner_id\"] != actor_id and not is_admin(actor_id):\n         return False\n     task[\"done\"] = True\n"
+}

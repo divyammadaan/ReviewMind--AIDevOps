@@ -1,0 +1,67 @@
+# ReviewMind AIDevOps: a containerised shop made of microservices that can be
+# broken and repaired from the control plane.
+#
+#   docker compose up --build        then open  http://localhost:9000  (control plane)
+#                                               http://localhost:8080  (storefront)
+#
+# Secrets come from ../.env (gitignored). Services hot-reload from the shared
+# `runtime` volume, so breaking or fixing one is just rewriting its main.py.
+
+x-service: &service
+  build: .
+  image: reviewmind/aidevops:latest
+  volumes: [runtime:/runtime]
+  restart: unless-stopped
+  command:
+    - sh
+    - -c
+    - >
+      mkdir -p /runtime/$$SVC /runtime/logs;
+      [ -f /runtime/$$SVC/main.py ] || cp /golden/$$SVC/main.py /runtime/$$SVC/main.py;
+      uvicorn main:app --app-dir /runtime/$$SVC --host 0.0.0.0 --port $$PORT
+      --reload --reload-dir /runtime/$$SVC 2>&1 | tee -a /runtime/logs/$$SVC.log
+
+services:
+  gateway:
+    <<: *service
+    container_name: aidevops-gateway
+    ports: ["8080:8080"]
+    command: ["uvicorn", "main:app", "--app-dir", "/golden/gateway", "--host", "0.0.0.0", "--port", "8080"]
+
+  catalog:
+    <<: *service
+    container_name: aidevops-catalog
+    environment: {SVC: catalog, PORT: "9101"}
+
+  inventory:
+    <<: *service
+    container_name: aidevops-inventory
+    environment: {SVC: inventory, PORT: "9102"}
+
+  cart:
+    <<: *service
+    container_name: aidevops-cart
+    environment: {SVC: cart, PORT: "9103"}
+
+  payments:
+    <<: *service
+    container_name: aidevops-payments
+    environment: {SVC: payments, PORT: "9104"}
+
+  orders:
+    <<: *service
+    container_name: aidevops-orders
+    environment: {SVC: orders, PORT: "9105"}
+
+  ops:
+    <<: *service
+    container_name: aidevops-ops
+    ports: ["9000:9000"]
+    env_file:
+      - path: ../.env
+        required: false
+    command: ["uvicorn", "main:app", "--app-dir", "/ops", "--host", "0.0.0.0", "--port", "9000"]
+    depends_on: [gateway, catalog, inventory, cart, payments, orders]
+
+volumes:
+  runtime:

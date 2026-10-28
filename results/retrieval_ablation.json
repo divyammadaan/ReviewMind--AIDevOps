@@ -1,0 +1,58 @@
+{
+  "n_chunks": 31,
+  "n_cases": 4,
+  "critical_chunks": {
+    "null_deref_001": "fetch_user",
+    "null_deref_002": "fetch_task",
+    "broken_contract_001": "handle_update_email",
+    "broken_contract_002": "handle_user_summary"
+  },
+  "context_recall_at_k": {
+    "bm25": {
+      "1": 1,
+      "2": 2,
+      "3": 3,
+      "4": 3,
+      "6": 4,
+      "8": 4
+    },
+    "+callee": {
+      "1": 1,
+      "2": 2,
+      "3": 3,
+      "4": 3,
+      "6": 4,
+      "8": 4
+    },
+    "+bidir": {
+      "1": 4,
+      "2": 4,
+      "3": 4,
+      "4": 4,
+      "6": 4,
+      "8": 4
+    }
+  },
+  "ranks_at_k6": {
+    "null_deref_001": {
+      "bm25": 5,
+      "+callee": 1,
+      "+bidir": 1
+    },
+    "null_deref_002": {
+      "bm25": 2,
+      "+callee": 2,
+      "+bidir": 2
+    },
+    "broken_contract_001": {
+      "bm25": 1,
+      "+callee": 3,
+      "+bidir": 3
+    },
+    "broken_contract_002": {
+      "bm25": 3,
+      "+callee": 6,
+      "+bidir": 3
+    }
+  }
+}

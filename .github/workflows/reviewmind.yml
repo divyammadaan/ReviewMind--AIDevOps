@@ -1,0 +1,110 @@
+# ReviewMind -- automated semantic PR review (A2 rubric: GitHub Actions CI/CD)
+#
+# SAFETY DESIGN -- read before editing.
+#
+# This workflow uses `pull_request`, NOT `pull_request_target`.
+#   * `pull_request` runs with a READ-ONLY token and no access to secrets when
+#     the PR comes from a fork. That is why posting is guarded below.
+#   * `pull_request_target` WOULD give us secrets on fork PRs, but it checks out
+#     the BASE repo while granting write permissions -- the standard privilege-
+#     escalation footgun. We do not use it.
+#
+# ReviewMind never executes the pull request's code. It parses it with `ast` and
+# sends text to an LLM. No `pip install -r` of the PR's requirements, no test
+# run, no build step on untrusted input.
+
+name: ReviewMind
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '**.py'
+
+# Least privilege: read the code, write PR comments. Nothing else.
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  # Supersede an in-flight review when the PR is updated again.
+  group: reviewmind-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out the PR head
+        uses: actions/checkout@v4
+        with:
+          # Full history so the merge-base diff is computable.
+          fetch-depth: 0
+          # NOTE: this checks out PR code. We only ever READ and PARSE it.
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install ReviewMind dependencies only
+        # Deliberately installs OUR pinned requirements, never the PR's.
+        # Installing a PR's dependencies would execute arbitrary setup code.
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Compute the diff
+        id: diff
+        run: |
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          git diff --unified=3 "$BASE" "$HEAD" -- '*.py' > /tmp/pr.diff || true
+          echo "lines=$(wc -l < /tmp/pr.diff)" >> "$GITHUB_OUTPUT"
+          echo "Diff is $(wc -l < /tmp/pr.diff) lines"
+
+      - name: Detect whether secrets are available
+        id: keycheck
+        # Fork PRs get no secrets. Detect that explicitly rather than failing
+        # with a confusing auth error deep in the run.
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          if [ -n "$GROQ_API_KEY" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::GROQ_API_KEY unavailable (likely a fork PR). Skipping LLM review."
+          fi
+
+      - name: Run ReviewMind
+        if: steps.keycheck.outputs.available == 'true' && steps.diff.outputs.lines != '0'
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GROQ_MODEL: ${{ vars.GROQ_MODEL || 'openai/gpt-oss-120b' }}
+          REVIEWMIND_LLM_MODE: live
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python -m reviewmind.github.action \
+            --diff /tmp/pr.diff \
+            --repo "${{ github.repository }}" \
+            --pr "${{ github.event.pull_request.number }}" \
+            --repo-root . \
+            --output /tmp/review.json
+
+      - name: Always run the static baseline
+        # Runs even without secrets, so a fork PR still gets useful feedback.
+        if: always() && steps.diff.outputs.lines != '0'
+        run: |
+          python -m ruff check --select E,F,B,S,SIM,RET,ARG,TRY --output-format github . || true
+
+      - name: Upload the review as an artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reviewmind-review
+          path: /tmp/review.json
+          if-no-files-found: ignore

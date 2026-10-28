@@ -1,0 +1,343 @@
+{
+  "run": "run_20261007T170119Z",
+  "config": {
+    "timestamp_utc": "20261007T170119Z",
+    "arms": [
+      "static",
+      "llm_diff",
+      "llm_rag"
+    ],
+    "mode": "live",
+    "repeats": 1,
+    "top_k": 6,
+    "retriever": "bidir",
+    "n_cases": 14,
+    "n_records": 42,
+    "complete": true,
+    "injection_mode_filter": null,
+    "model": "openai/gpt-oss-120b",
+    "git_commit": "not-a-git-repo",
+    "python": "3.12.15",
+    "platform": "Linux-aarch64",
+    "valid_for_reporting": true,
+    "validity_note": "All responses came from a live model."
+  },
+  "arms": {
+    "static": {
+      "arm": "static",
+      "tolerance": 3,
+      "n_cases": 14,
+      "n_detected": 4,
+      "recall": 0.2857,
+      "recall_ci95": [
+        0.1172,
+        0.5465
+      ],
+      "n_detected_semantic": 3,
+      "recall_semantic": 0.2143,
+      "recall_semantic_ci95": [
+        0.0757,
+        0.4759
+      ],
+      "precision_lower_bound": 0.4444,
+      "f1_lower_bound": 0.3478,
+      "total_issues_reported": 9,
+      "issues_per_case": 0.64,
+      "median_latency_s": 0.257,
+      "p90_latency_s": 0.27,
+      "total_tokens": 0,
+      "recall_by_class": {
+        "bare_except": {
+          "detected": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "broken_contract": {
+          "detected": 1,
+          "total": 3,
+          "recall": 0.3333
+        },
+        "hardcoded_secret": {
+          "detected": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "missing_error_handling": {
+          "detected": 0,
+          "total": 2,
+          "recall": 0.0
+        },
+        "null_dereference": {
+          "detected": 0,
+          "total": 4,
+          "recall": 0.0
+        },
+        "off_by_one": {
+          "detected": 0,
+          "total": 2,
+          "recall": 0.0
+        },
+        "sql_injection": {
+          "detected": 1,
+          "total": 1,
+          "recall": 1.0
+        }
+      },
+      "recall_by_context_need": {
+        "cross_file": {
+          "detected": 1,
+          "total": 8,
+          "recall": 0.125
+        },
+        "local": {
+          "detected": 3,
+          "total": 6,
+          "recall": 0.5
+        }
+      },
+      "recall_by_injection_mode": {
+        "addition": {
+          "detected": 0,
+          "total": 4,
+          "recall": 0.0
+        },
+        "deletion": {
+          "detected": 4,
+          "total": 10,
+          "recall": 0.4
+        }
+      },
+      "recall_cross_file_additive": [
+        0,
+        4
+      ],
+      "semantic_by_injection_mode": {
+        "addition": {
+          "detected": 0,
+          "total": 4,
+          "recall": 0.0
+        },
+        "deletion": {
+          "detected": 3,
+          "total": 10,
+          "recall": 0.3
+        }
+      },
+      "semantic_cross_file_additive": [
+        0,
+        4
+      ]
+    },
+    "llm_diff": {
+      "arm": "llm_diff",
+      "tolerance": 3,
+      "n_cases": 14,
+      "n_detected": 14,
+      "recall": 1.0,
+      "recall_ci95": [
+        0.7847,
+        1.0
+      ],
+      "n_detected_semantic": 12,
+      "recall_semantic": 0.8571,
+      "recall_semantic_ci95": [
+        0.6006,
+        0.9599
+      ],
+      "precision_lower_bound": 0.7368,
+      "f1_lower_bound": 0.8485,
+      "total_issues_reported": 19,
+      "issues_per_case": 1.36,
+      "median_latency_s": 3.571,
+      "p90_latency_s": 54.068,
+      "total_tokens": 21902,
+      "recall_by_class": {
+        "bare_except": {
+          "detected": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "broken_contract": {
+          "detected": 3,
+          "total": 3,
+          "recall": 1.0
+        },
+        "hardcoded_secret": {
+          "detected": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "missing_error_handling": {
+          "detected": 2,
+          "total": 2,
+          "recall": 1.0
+        },
+        "null_dereference": {
+          "detected": 4,
+          "total": 4,
+          "recall": 1.0
+        },
+        "off_by_one": {
+          "detected": 2,
+          "total": 2,
+          "recall": 1.0
+        },
+        "sql_injection": {
+          "detected": 1,
+          "total": 1,
+          "recall": 1.0
+        }
+      },
+      "recall_by_context_need": {
+        "cross_file": {
+          "detected": 8,
+          "total": 8,
+          "recall": 1.0
+        },
+        "local": {
+          "detected": 6,
+          "total": 6,
+          "recall": 1.0
+        }
+      },
+      "recall_by_injection_mode": {
+        "addition": {
+          "detected": 4,
+          "total": 4,
+          "recall": 1.0
+        },
+        "deletion": {
+          "detected": 10,
+          "total": 10,
+          "recall": 1.0
+        }
+      },
+      "recall_cross_file_additive": [
+        4,
+        4
+      ],
+      "semantic_by_injection_mode": {
+        "addition": {
+          "detected": 2,
+          "total": 4,
+          "recall": 0.5
+        },
+        "deletion": {
+          "detected": 10,
+          "total": 10,
+          "recall": 1.0
+        }
+      },
+      "semantic_cross_file_additive": [
+        2,
+        4
+      ]
+    },
+    "llm_rag": {
+      "arm": "llm_rag",
+      "tolerance": 3,
+      "n_cases": 14,
+      "n_detected": 14,
+      "recall": 1.0,
+      "recall_ci95": [
+        0.7847,
+        1.0
+      ],
+      "n_detected_semantic": 14,
+      "recall_semantic": 1.0,
+      "recall_semantic_ci95": [
+        0.7847,
+        1.0
+      ],
+      "precision_lower_bound": 0.6667,
+      "f1_lower_bound": 0.8,
+      "total_issues_reported": 21,
+      "issues_per_case": 1.5,
+      "median_latency_s": 3.271,
+      "p90_latency_s": 53.745,
+      "total_tokens": 29240,
+      "recall_by_class": {
+        "bare_except": {
+          "detected": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "broken_contract": {
+          "detected": 3,
+          "total": 3,
+          "recall": 1.0
+        },
+        "hardcoded_secret": {
+          "detected": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "missing_error_handling": {
+          "detected": 2,
+          "total": 2,
+          "recall": 1.0
+        },
+        "null_dereference": {
+          "detected": 4,
+          "total": 4,
+          "recall": 1.0
+        },
+        "off_by_one": {
+          "detected": 2,
+          "total": 2,
+          "recall": 1.0
+        },
+        "sql_injection": {
+          "detected": 1,
+          "total": 1,
+          "recall": 1.0
+        }
+      },
+      "recall_by_context_need": {
+        "cross_file": {
+          "detected": 8,
+          "total": 8,
+          "recall": 1.0
+        },
+        "local": {
+          "detected": 6,
+          "total": 6,
+          "recall": 1.0
+        }
+      },
+      "recall_by_injection_mode": {
+        "addition": {
+          "detected": 4,
+          "total": 4,
+          "recall": 1.0
+        },
+        "deletion": {
+          "detected": 10,
+          "total": 10,
+          "recall": 1.0
+        }
+      },
+      "recall_cross_file_additive": [
+        4,
+        4
+      ],
+      "semantic_by_injection_mode": {
+        "addition": {
+          "detected": 4,
+          "total": 4,
+          "recall": 1.0
+        },
+        "deletion": {
+          "detected": 10,
+          "total": 10,
+          "recall": 1.0
+        }
+      },
+      "semantic_cross_file_additive": [
+        4,
+        4
+      ]
+    }
+  },
+  "n_errors": 0
+}

@@ -44,7 +44,7 @@ def view(user: str):
     subtotal = 0
     for pid, qty in CARTS.get(user, {}).items():
         product = httpx.get(f"{CATALOG}/products/{pid}", timeout=3).json()
-        line_total = product["price"] * qty
+        line_total = product["cost"] * qty
         lines.append({"product_id": pid, "name": product["name"], "image": product["image"],
                       "price": product["price"], "qty": qty, "line_total": line_total})
         subtotal += line_total

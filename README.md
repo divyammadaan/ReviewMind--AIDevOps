@@ -4,7 +4,6 @@ An AI pull-request reviewer that retrieves related code from across the
 repository before judging a change — **and a controlled experiment measuring
 whether that retrieval actually helps.**
 
-CSE 4011 — Intelligent Developer Tools and AI DevOps Workflows · A2 Mid-Term
 
 ---
 

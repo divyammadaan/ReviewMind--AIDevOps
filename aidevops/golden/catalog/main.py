@@ -26,7 +26,7 @@ def list_products():
 
 @app.get("/products/{pid}")
 def get_product(pid: int):
-    product = BY_IDS.get(pid)
+    product = BY_ID.get(pid)
     if product is None:
         raise HTTPException(404, "no such product")
     return product

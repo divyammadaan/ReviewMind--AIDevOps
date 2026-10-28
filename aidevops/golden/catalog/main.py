@@ -21,7 +21,7 @@ def health():
 
 @app.get("/products")
 def list_products():
-    return PRODUCTS
+    return PRODUCTS[:2]
 
 
 @app.get("/products/{pid}")

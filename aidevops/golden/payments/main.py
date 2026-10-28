@@ -25,4 +25,4 @@ def charge(c: Charge):
         raise HTTPException(400, "amount must be positive")
     if c.amount > 100000:
         raise HTTPException(402, "declined: over limit")
-    return {"status": "pending", "txn_id": f"txn_{next(_ids):06d}", "amount": c.amount}
+    return {"status": "approved", "txn_id": f"txn_{next(_ids):06d}", "amount": c.amount}

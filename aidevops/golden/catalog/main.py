@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 app = FastAPI(title="catalog")
 
 PRODUCTS = [
-    {"id": 1, "name": "Wireless Headphones", "price": 29.99, "category": "Audio", "image": "/img/1.jpg"},
+    {"id": 1, "name": "Wireless Headphones", "price": 2999, "category": "Audio", "image": "/img/1.jpg"},
     {"id": 2, "name": "Mechanical Keyboard", "price": 4499, "category": "Desk", "image": "/img/2.jpg"},
     {"id": 3, "name": "Wireless Mouse", "price": 1799, "category": "Accessories", "image": "/img/3.jpg"},
     {"id": 4, "name": "Monitor Arm", "price": 2499, "category": "Desk", "image": "/img/4.jpg"},

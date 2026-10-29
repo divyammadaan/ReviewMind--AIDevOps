@@ -21,7 +21,7 @@ def health():
 
 @app.post("/charge")
 def charge(c: Charge):
-    if c.amount <= 0:
+    if c.amount < 0:
         raise HTTPException(400, "amount must be positive")
     if c.amount > 100000:
         raise HTTPException(402, "declined: over limit")

@@ -80,13 +80,15 @@ def cart():
 
 def payments():
     u = URL["payments"]
-    ok = _ok(httpx.post(f"{u}/charge", json={"user": "probe", "amount": 100}, timeout=T), "POST /charge 100")
-    check(ok["status"] == "approved" and ok["txn_id"],
-          f"charge of 100 expected status 'approved' with a txn_id, got {ok}")
-    for amount in (5398.2, 99999):
-        big = _ok(httpx.post(f"{u}/charge", json={"user": "probe", "amount": amount}, timeout=T),
-                  f"POST /charge {amount}")
-        check(big["status"] == "approved", f"charge of {amount} expected status 'approved', got '{big['status']}'")
+    # Try several amounts and report every one that fails, so the symptom shows the pattern
+    # and not just a single example that a repair could be tailored to.
+    got = {}
+    for amount in (100, 5398.2, 99999):
+        r = _ok(httpx.post(f"{u}/charge", json={"user": "probe", "amount": amount}, timeout=T), f"POST /charge {amount}")
+        got[amount] = r
+    bad = {a: r["status"] for a, r in got.items() if r["status"] != "approved" or not r.get("txn_id")}
+    check(not bad, "charges for these amounts expected status 'approved' with a txn_id, but got: "
+                   + ", ".join(f"{a} -> '{st}'" for a, st in bad.items()) + f" (tried {list(got)})")
     over = httpx.post(f"{u}/charge", json={"user": "probe", "amount": 100001}, timeout=T)
     check(over.status_code == 402, f"charge of 100001 expected HTTP 402 (over limit), got {over.status_code}")
     zero = httpx.post(f"{u}/charge", json={"user": "probe", "amount": 0}, timeout=T)

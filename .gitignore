@@ -45,7 +45,23 @@ data/index/
 # for reference but are excluded from the repository.
 *.pdf
 
+# Coursework (presentations, reports, charter, viva notes, personal write-ups):
+# kept on disk, not published. The technical docs (RESEARCH_DESIGN, LIMITATIONS,
+# TOOL_COVERAGE) stay in the repo.
+docs/*.pptx
+docs/PROJECT_SUMMARY_FOR_RESUME.md
+docs/CHARTER.md
+docs/PROGRESS_REPORT.md
+docs/TIMELINE.md
+docs/PRESENTATION_BRIEF.md
+docs/VIVA_PREP.md
+docs/RESPONSIBILITY_MATRIX.md
+docs/DEMO_SCRIPT.md
+
 # ---- Editor / OS ----
 .vscode/
 .idea/
 .DS_Store
+
+# Office lock files
+~$*

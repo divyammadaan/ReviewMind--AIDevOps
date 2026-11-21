@@ -1,5 +1,7 @@
 """End-to-end test: inject every fault, let the AI repair it, confirm the service recovers.
 
+Uses auto_approve (automation mode) so no human is needed; the approval flow itself is covered by workflow_test.py.
+
 Needs the stack running (docker compose up) and a Groq key in ../.env.
     python tests/repair_all.py [--mode ai|golden] [--only cart,orders]
 """
@@ -49,10 +51,11 @@ def main():
             s = wait(lambda s: s[svc]["status"] in ("broken", "down"), 30)
             detected = s[svc]["status"] in ("broken", "down")
             t0 = time.time()
-            httpx.post(f"{OPS}/api/services/{svc}/fix", params={"mode": args.mode}, timeout=10)
+            httpx.post(f"{OPS}/api/services/{svc}/fix", params={"mode": args.mode, "auto_approve": "true"}, timeout=10)
             time.sleep(2)
             s = wait(lambda s: s[svc]["status"] == "healthy" and not s[svc]["fixing"], 70)
-            fixed = s[svc]["status"] == "healthy"
+            # counted only if the patch was verified: a rolled-back patch also leaves the service healthy
+            fixed = s[svc]["status"] == "healthy" and (args.mode == "golden" or s[svc]["repair"]["state"] == "resolved")
             lf = s[svc]["last_fix"] or {}
             rows.append((b["id"], detected, fixed, round(time.time() - t0, 1), lf.get("tokens", 0), lf.get("how", "-")))
             print(f'{b["id"]:22} detected={detected!s:5} fixed={fixed!s:5} {rows[-1][3]:>5}s '

@@ -1,7 +1,9 @@
 # ReviewMind AIDevOps
 
 A containerised shop built from microservices that you can **break and repair from a dashboard**.
-Repairs are done by an LLM (Groq) that sees only the failing probe, the logs and one small file.
+An LLM (Groq) proposes repairs from the failing probe, the logs, a distributed trace and one small file.
+**A human approves every patch before it touches a running service**, and a patch that fails
+verification is **rolled back automatically**. Every request is traced with OpenTelemetry.
 
 ```
  browser ──> gateway :8080 ──> catalog :9101
@@ -10,7 +12,9 @@ Repairs are done by an LLM (Groq) that sees only the failing probe, the logs and
                              ├> payments :9104
                              └> orders :9105 ──> cart, inventory, payments
 
- ops control plane :9000  ── probes every service, injects faults, calls Groq, redeploys fixes
+ ops control plane :9000  ── probes services, injects faults, calls Groq, approves/applies/rolls back
+                              patches, and is the OTLP trace receiver (/v1/traces)
+ metrics sidecar :9200    ── CPU and memory per container (the only Docker-socket holder)
 ```
 
 ## Run
@@ -22,7 +26,7 @@ docker compose up --build
 
 | URL | What |
 |---|---|
-| http://localhost:9000 | Control plane: break / fix / restore, live activity feed |
+| http://localhost:9000 | Control plane: break, propose, approve/reject, restore; metrics; distributed traces |
 | http://localhost:8080 | Storefront: watch it degrade when a service is broken |
 
 ## Keys (all in `../.env`)
@@ -33,33 +37,53 @@ GROQ_API_KEY_2=...    first fallback
 GROQ_API_KEY_3=...    second fallback
 ```
 
-For each repair the fixer tries the primary key, then fallback 1, then fallback 2; per key it tries
+For each proposal the fixer tries the primary key, then fallback 1, then fallback 2; per key it tries
 `openai/gpt-oss-120b`, then `openai/gpt-oss-20b` (override with `GROQ_FIX_MODELS`). With no key set,
 "Fix with AI" falls back to restoring the known-good file, so the demo never dead-ends.
 
-## How it works
+## The repair workflow
 
-- Every service is one small `main.py` (about 40 lines), so a repair costs roughly 1-2k tokens.
-- Services run `uvicorn --reload` from a shared Docker volume. **Breaking or fixing a service is
-  rewriting its file**; the container reloads itself. No Docker socket is mounted.
-- `ops/bugs.py` holds 15 one-line faults (typos, wrong units, a 1000% discount, a wrong port,
-  a syntax error that stops a service booting). The fixer never sees this file.
-- `ops/probes.py` are black-box checks. A failure message says what was expected and what came
-  back, and that is the only symptom the LLM gets.
-- If a service fails only because something it depends on is broken, it is shown as **blocked**,
-  so the AI is pointed at the real root cause.
-- A patch must compile, redeploy and pass the probe within ~14 s. Otherwise one retry with the new
-  symptom, then the repair is reported as failed.
+```
+ Break ─> probe fails ─> Fix with AI ─> PENDING APPROVAL ─┬─ Reject ─────────> REJECTED (service untouched)
+                          (diff shown,                    │
+                           nothing applied)               └─ Approve & Apply ─> APPROVED ─> deploy ─> verify
+                                                                                              │
+                                                  pass: RESOLVED  <───────────────────────────┤
+                                                  fail/timeout: ROLLED BACK to last known-good┘
+```
 
-## GitHub incident reports (optional)
+1. **Propose.** *Fix with AI* generates the corrected file and a diff. **Nothing is applied.** The card
+   shows the diff with **Approve & Apply** and **Reject**. The incident states are *Pending approval*,
+   *Approved*, *Rejected*, *Resolved* and *Rolled back*.
+2. **Approve.** Only then is the patch written to the running service. It must compile, the service must
+   restart and the health probe must pass within `VERIFY_TIMEOUT` seconds (default 14).
+3. **Roll back automatically.** If verification fails or times out, the last known-good code is restored,
+   health is re-checked, and the reason and timestamp are shown on the card and in the activity log. A
+   failed patch is **never** marked resolved. "Last known-good" is the code that was healthy before the
+   fault (or the original code at start-up).
+4. **Reject** discards the proposal and leaves the service exactly as it was.
 
-With `GITHUB_TOKEN` and `GITHUB_REPO` set in `../.env`, every fault becomes a pull request:
+Guard rails: a proposal is refused if the service changed since it was generated (stale), a patch that
+does not compile is refused before it is ever held for approval, and an operator can still use
+**Restore known-good**, which discards any pending proposal.
 
-1. **Break** opens a branch holding the broken `main.py` and a PR titled `[Incident] <service>`, with the failing probe in the body.
-2. An LLM reviews the diff and posts an **inline review comment on the faulty line** saying what to change.
-3. **Fix** (AI or known-good restore) commits the repair to that branch, posts a "Resolved" comment (time, tokens, diff) and **closes the PR without merging**.
+You can also submit your own patch: `POST /api/services/<svc>/propose` with `{"code": "<full main.py>"}`.
+It goes through the same approval, verification and rollback. `fix?mode=ai&auto_approve=true` skips the
+human step. It exists for automation and tests, is logged loudly, and is not used by the dashboard.
 
-Toggle it from the GitHub chip in the dashboard header. It is off when no token is set. The token needs a fine-grained PAT on the repo with *Contents: read/write* and *Pull requests: read/write*. The repo must already contain `aidevops/golden/<service>/main.py` on its default branch (push first).
+**Why a rollback cannot get stuck.** Each service runs under `watchfiles`, which restarts it on every
+file change and escalates to SIGKILL. We found (and tested, see `workflow_test.py` 4b) that plain
+`uvicorn --reload` waits forever for a process that ignores SIGTERM, so one poisonous patch would block
+the rollback itself.
+
+### GitHub incident pull requests (optional, separate from approval)
+
+With `GITHUB_TOKEN` and `GITHUB_REPO` set in `../.env`, every fault becomes a pull request: **Break** opens
+a branch holding the broken `main.py` and an `[Incident]` PR; an LLM posts an inline review comment on the
+faulty line. The PR is a **record of the incident, not an approval**. The proposed diff, a rejection or a
+rollback are added as comments, and the PR is closed (never merged) only when a verified fix is applied.
+Toggle it with the GitHub chip in the dashboard header. The token needs a fine-grained PAT with *Contents*
+and *Pull requests* read/write, and the repo must already contain `aidevops/golden/<service>/main.py`.
 
 ```
 GITHUB_TOKEN=github_pat_...
@@ -67,31 +91,92 @@ GITHUB_REPO=divyammadaan/ReviewMind--AIDevOps
 GITHUB_BASE_BRANCH=main            # optional
 ```
 
+## Observability (OpenTelemetry: traces, metrics and logs)
+
+Every service and the control plane are instrumented **without editing the service code**:
+`otel/sitecustomize.py` is loaded by Python in every process (`PYTHONPATH=/otel`) and instruments FastAPI
+(incoming requests) and httpx (outgoing requests), and exports all three signals over OTLP/HTTP. The W3C `traceparent` header carries the trace ID
+across HTTP calls, so one storefront request becomes one trace spanning gateway, orders, cart, catalog,
+inventory and payments, with each span's service name, duration, HTTP status and any exception.
+
+- **Collector.** Spans, metrics and logs are exported over OTLP/HTTP to the control plane (`POST /v1/traces`,
+  `/v1/metrics`, `/v1/logs`), which stitches spans into traces. No extra container is needed. To use a real collector or Jaeger instead, set
+  `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` in `docker-compose.yml`.
+- **Dashboard.** *Distributed traces* lists failing traces first (with the service where the request
+  actually broke), plus storefront traffic and health probes; click a trace for a waterfall. Each service
+  card also shows requests/min, error % and p95 latency from its server spans (storefront traffic only).
+- **Metrics.** Each service exports the request-duration histogram every 5 s. The control plane turns the
+  cumulative counters into **requests/s, 5xx error %, p50/p95/p99 latency and requests in flight** per
+  service over the last minute (shown in the *Metrics* panel; `GET /api/metrics`). Counter resets when a
+  service restarts are detected. These numbers include the control plane's own health probes.
+- **Logs.** Python logging, including uvicorn's access and error logs with full stack traces, is exported
+  and shown in the *Logs* panel (warnings and errors by default; `GET /api/logs`). A log written inside a
+  request is stamped with that request's **trace ID**, so opening a trace shows its log lines. Some lines
+  (for example uvicorn's "Exception in ASGI application" traceback) are written after the request's span
+  has ended and carry no trace ID; the dashboard shows those separately, labelled as matched by time only.
+- **No feedback loop.** The control plane is the collector, so it never exports its own access logs (they
+  would otherwise be received, logged and exported again forever).
+- **Origin labels.** Health probes carry an `origin=probe` OpenTelemetry *baggage* item that propagates
+  across services, so probe traffic never pollutes storefront numbers.
+- **Used by the repair.** The newest failing trace for the broken service (for example
+  *"orders → payments:9140 ConnectError"*) is added to the AI prompt as evidence.
+- **Not a hard dependency.** Telemetry setup is wrapped so that any failure leaves the service running
+  untelemetered; spans export from a background thread with a 2 s timeout and a bounded queue, so an
+  unreachable collector cannot slow or break a request. Exporter errors are rate-limited to one per
+  minute. Verified in `telemetry_test.py` and `observability_test.py` (collector stopped, services restarted). Set
+  `OTEL_SDK_DISABLED=true` to turn it off.
+
+## Live metrics per service
+
+Each card shows live **CPU** (% of one core, with a sparkline), **memory** and **tokens** consumed by that
+service, next to its probe latency and trace-derived request stats. CPU and memory come from the `metrics`
+sidecar, the only container with the Docker socket mounted. It serves one read-only `/stats` endpoint. Mounting
+the socket gives that one container broad access to Docker on the host, so it is kept tiny and fixed.
+
+## How the rest works
+
+- Every service is one small `main.py` (about 40 lines), so a proposal costs roughly 1-2k tokens.
+- **Breaking or fixing a service is rewriting its file** on a shared volume; `watchfiles` restarts it. The
+  control plane never touches Docker.
+- `ops/bugs.py` holds 15 one-line faults; the fixer never sees this file. `ops/probes.py` are black-box
+  checks whose failure message (expected vs actual) is the symptom the LLM gets.
+- If a service fails only because something it depends on is broken it is shown as **blocked**.
+
 ## Tests
 
-With the stack running and a key in `../.env`:
+Everything below runs against the real stack; nothing is mocked. With the stack running and a key in `../.env`:
 
 ```bash
-python tests/repair_all.py            # inject all 15 faults, AI-repair each, report pass/fail + tokens
-python tests/repair_all.py --mode golden   # same, but restore known-good (no API calls)
-python tests/repair_all.py --only cart,orders
+python tests/workflow_test.py     # approval, rejection, failed verification, timeout, poison patch, guard rails (54 checks)
+python tests/telemetry_test.py    # trace propagation, failure localisation, probe labelling, collector down (27 checks)
+python tests/observability_test.py # metrics vs real traffic, error rates, stack-trace logs, log/trace linking (26 checks)
+python tests/repair_all.py        # inject all 15 faults, AI-repair each (auto_approve), count only VERIFIED repairs
+python tests/repair_all.py --mode golden   # same without the LLM (no API calls)
 ```
+
+`workflow_test.py` deploys genuinely bad patches (one that compiles but does not fix the bug, one that hangs
+at start-up, one that ignores SIGTERM) and checks the service really recovers. `telemetry_test.py` stops the
+control plane (the collector) and restarts services while it is down.
 
 The incident-PR flow is tested against a fake GitHub, so no real repo is touched:
 
 ```bash
 python tests/mock_github.py &                                   # fake GitHub on :9999
 docker compose -f docker-compose.yml -f tests/docker-compose.mock.yml up -d ops
-python tests/github_flow.py                                     # 12 checks, end to end
+python tests/github_flow.py                                     # end to end, incl. "a PR is not an approval"
 docker compose up -d --force-recreate ops                       # back to the real config
 ```
 
-`repair_all.py` passes `report=false`, so running it never opens real PRs.
+All fault injection in the tests uses `report=false`, so running them never opens real PRs.
 
 ## Layout
 
 ```
 golden/<service>/main.py   known-good code (also the restore point)
 golden/gateway/            edge proxy + storefront UI
-ops/                       control plane: main.py, probes.py, bugs.py, fixer.py, static/index.html
+ops/                       control plane: main.py, probes.py, bugs.py, fixer.py, github.py, telemetry.py (traces),
+                           signals.py (metrics + logs), static/index.html
+otel/sitecustomize.py      OpenTelemetry bootstrap loaded into every process
+metrics/                   CPU/memory sidecar
+tests/                     end-to-end tests (see above)
 ```

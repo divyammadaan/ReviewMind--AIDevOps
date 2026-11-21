@@ -5,7 +5,18 @@
 #                                               http://localhost:8080  (storefront)
 #
 # Secrets come from ../.env (gitignored). Services hot-reload from the shared
-# `runtime` volume, so breaking or fixing one is just rewriting its main.py.
+# `runtime` volume, so breaking or fixing one is just rewriting its main.py. `watchfiles` restarts the
+# service on every change and escalates to SIGKILL, so a patch that ignores signals cannot wedge a rollback.
+# Only the `metrics` sidecar mounts the Docker socket (to read CPU/memory stats).
+
+# OpenTelemetry: /otel/sitecustomize.py instruments FastAPI and httpx in every process. Spans go to the
+# control plane's OTLP receiver. Telemetry is optional: if the receiver is down the services run unchanged.
+x-otel: &otel
+  PYTHONPATH: /otel
+  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://ops:9000/v1/traces
+  OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://ops:9000/v1/metrics
+  OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: http://ops:9000/v1/logs
+  OTEL_EXPORTER_OTLP_TIMEOUT: "2"
 
 x-service: &service
   build: .
@@ -18,50 +29,69 @@ x-service: &service
     - >
       mkdir -p /runtime/$$SVC /runtime/logs;
       [ -f /runtime/$$SVC/main.py ] || cp /golden/$$SVC/main.py /runtime/$$SVC/main.py;
-      uvicorn main:app --app-dir /runtime/$$SVC --host 0.0.0.0 --port $$PORT
-      --reload --reload-dir /runtime/$$SVC 2>&1 | tee -a /runtime/logs/$$SVC.log
+      watchfiles --filter python --sigint-timeout 2 --sigkill-timeout 1
+      "uvicorn main:app --app-dir /runtime/$$SVC --host 0.0.0.0 --port $$PORT" /runtime/$$SVC
+      2>&1 | tee -a /runtime/logs/$$SVC.log
 
 services:
   gateway:
     <<: *service
     container_name: aidevops-gateway
     ports: ["8080:8080"]
+    environment: {<<: *otel, OTEL_SERVICE_NAME: gateway}
     command: ["uvicorn", "main:app", "--app-dir", "/golden/gateway", "--host", "0.0.0.0", "--port", "8080"]
 
   catalog:
     <<: *service
     container_name: aidevops-catalog
-    environment: {SVC: catalog, PORT: "9101"}
+    environment: {<<: *otel, OTEL_SERVICE_NAME: catalog, SVC: catalog, PORT: "9101"}
 
   inventory:
     <<: *service
     container_name: aidevops-inventory
-    environment: {SVC: inventory, PORT: "9102"}
+    environment: {<<: *otel, OTEL_SERVICE_NAME: inventory, SVC: inventory, PORT: "9102"}
 
   cart:
     <<: *service
     container_name: aidevops-cart
-    environment: {SVC: cart, PORT: "9103"}
+    environment: {<<: *otel, OTEL_SERVICE_NAME: cart, SVC: cart, PORT: "9103"}
 
   payments:
     <<: *service
     container_name: aidevops-payments
-    environment: {SVC: payments, PORT: "9104"}
+    environment: {<<: *otel, OTEL_SERVICE_NAME: payments, SVC: payments, PORT: "9104"}
 
   orders:
     <<: *service
     container_name: aidevops-orders
-    environment: {SVC: orders, PORT: "9105"}
+    environment: {<<: *otel, OTEL_SERVICE_NAME: orders, SVC: orders, PORT: "9105"}
+
+  # Reads container CPU and memory from the Docker stats API. The ONLY container with the
+  # Docker socket, and it serves one read-only endpoint (/stats).
+  metrics:
+    <<: *service
+    container_name: aidevops-metrics
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: ["uvicorn", "main:app", "--app-dir", "/metrics", "--host", "0.0.0.0", "--port", "9200"]
 
   ops:
     <<: *service
     container_name: aidevops-ops
     ports: ["9000:9000"]
+    environment:
+      <<: *otel
+      OTEL_SERVICE_NAME: ops
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://127.0.0.1:9000/v1/traces
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://127.0.0.1:9000/v1/metrics
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: http://127.0.0.1:9000/v1/logs
+      # Do not trace the dashboard's own polling or the receiver itself (that would feed back into itself).
+      OTEL_PYTHON_FASTAPI_EXCLUDED_URLS: "v1/traces,v1/metrics,v1/logs,api/state,api/traces,api/telemetry,api/metrics,api/logs,api/health,/$"
     env_file:
       - path: ../.env
         required: false
     command: ["uvicorn", "main:app", "--app-dir", "/ops", "--host", "0.0.0.0", "--port", "9000"]
-    depends_on: [gateway, catalog, inventory, cart, payments, orders]
+    depends_on: [gateway, catalog, inventory, cart, payments, orders, metrics]
 
 volumes:
   runtime:

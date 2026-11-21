@@ -106,6 +106,4 @@ experiments/
 | `docs/RESEARCH_DESIGN.md` | RQ, hypotheses, design, metrics, deviations |
 | `docs/LIMITATIONS.md` | **Three validity threats found by measurement** |
 | `docs/TOOL_COVERAGE.md` | Every required tool, with evidence of status |
-| `docs/PROGRESS_REPORT.md` | A2 progress report |
-| `docs/CHARTER.md` / `TIMELINE.md` | Charter and progress-vs-plan |
-| `docs/VIVA_PREP.md` | Defence notes |
+| `aidevops/README.md` | **Phase 2:** the self-healing microservice platform (approval, rollback, OpenTelemetry) |

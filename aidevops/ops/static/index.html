@@ -46,7 +46,44 @@
   .add{color:#86efac}.del{color:#fca5a5}.hunk{color:var(--info)}
   .feed{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;position:sticky;top:20px;max-height:calc(100vh - 110px);overflow:auto}
   .feed h3{margin:0 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
-  .ev{display:grid;grid-template-columns:62px 1fr;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .res span{font-variant-numeric:tabular-nums}
+  .spark{width:100%;height:30px;background:#0d1019;border:1px solid var(--line);border-radius:8px}
+  .spark polyline{fill:none;stroke:var(--ok);stroke-width:1.6;vector-effect:non-scaling-stroke}
+  .rstate{font-size:12px;font-weight:700;border-radius:8px;padding:6px 10px;border:1px solid var(--line);background:var(--panel2)}
+  .rstate.warn{color:var(--warn);border-color:#5a4412}.rstate.ok{color:var(--ok);border-color:#1d4a2c}
+  .rstate.bad{color:var(--bad);border-color:#5b2327}.rstate.info{color:var(--info);border-color:#25406b}.rstate.mute{color:var(--muted)}
+  .rbody{font-size:12px;color:var(--muted);margin-top:6px}.rbody b{color:var(--ink)}
+  .approve{border-color:#1d4a2c;color:#86efac}.approve:hover:not(:disabled){background:#10281a}
+  .traces{margin-top:22px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .traces h3{margin:0;font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .th{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}.seg{display:flex;gap:6px}
+  .seg button{padding:4px 10px;font-size:12px}.seg button.on{background:var(--brand);border-color:var(--brand);color:#0b0d14}
+  .tr{display:grid;grid-template-columns:70px minmax(0,1.3fr) minmax(0,1fr) 70px;gap:10px;padding:8px 6px;border-top:1px solid var(--line);font-size:13px;cursor:pointer;align-items:center}
+  .tr:hover{background:#151927}.tr .t{color:var(--muted);font-size:11px}.tr .dur{text-align:right;color:var(--muted)}
+  .tr .svcs{color:var(--muted);font-size:12px;overflow-wrap:anywhere}.tr .root{overflow-wrap:anywhere}
+  .tr .bad{color:var(--bad);font-size:12px;display:block}.tr.err .root{color:#fca5a5}
+  .wf{border-top:1px solid var(--line);padding:8px 6px 12px;background:#0d1019}
+  .wfrow{display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr) 96px;gap:10px;align-items:center;font-size:12px;padding:3px 0}
+  .wfrow .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wfrow .nm i{color:var(--muted);font-style:normal}
+  .wfbar{position:relative;height:12px;background:#151927;border-radius:3px}
+  .wfbar span{position:absolute;top:0;bottom:0;border-radius:3px;background:var(--info);min-width:2px}
+  .wfbar span.e{background:var(--bad)}.wfbar span.w{background:var(--warn)}.wfrow .d{color:var(--muted);text-align:right}
+  .mt{display:grid;grid-template-columns:1.2fr repeat(7,minmax(0,1fr));gap:6px;font-size:13px;padding:7px 6px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums;align-items:center}
+  .mt.head{border-top:0;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  .mt b{color:var(--ink)}.mt .bad{color:var(--bad)}.mt .warn{color:var(--warn)}.mt .dim{color:var(--muted)}
+  .note{color:var(--muted);font-size:12px;margin-top:8px}
+  select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font:inherit;font-size:12px}
+  .lg{display:grid;grid-template-columns:70px 78px 54px minmax(0,1fr) auto;gap:10px;padding:6px;border-top:1px solid var(--line);font-size:12.5px;cursor:pointer;align-items:start}
+  .lg:hover{background:#151927}.lg .t{color:var(--muted);font-size:11px}.lg .m{overflow-wrap:anywhere;font-family:ui-monospace,Consolas,monospace;font-size:12px}
+  .lv{font-size:10.5px;font-weight:700;border-radius:5px;padding:2px 6px;text-align:center}
+  .lv.ERROR,.lv.FATAL{background:#3a1519;color:#fca5a5}.lv.WARN{background:#3a2f12;color:#fcd34d}.lv.INFO{background:#16233a;color:#93c5fd}.lv.DEBUG,.lv.TRACE{background:#1b2030;color:var(--muted)}
+  .tid{font-size:11px;color:var(--info);border:1px solid #25406b;border-radius:6px;padding:1px 6px}
+  .lgx{padding:6px 6px 12px 160px;background:#0d1019;border-top:1px solid var(--line)}
+  .lgx pre{max-height:260px}.wflogs{margin-top:10px;font-size:12px}.wflogs h4{margin:8px 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  .wflogs .l{display:grid;grid-template-columns:62px 80px 52px minmax(0,1fr);gap:8px;padding:2px 0;font-family:ui-monospace,Consolas,monospace;font-size:11.5px}
+  .empty{color:var(--muted);font-size:13px;padding:14px 6px}
+  .ev{display:grid;grid-template-columns:62px minmax(0,1fr);gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .ev div{overflow-wrap:anywhere}.ev a{color:var(--info)}
   .ev time{color:var(--muted);font-size:11px;padding-top:2px}.ev em{font-style:normal;font-weight:700;margin-right:6px}
   .ev.err em{color:var(--bad)}.ev.ok em{color:var(--ok)}.ev.warn em{color:var(--warn)}.ev.info em{color:var(--info)}
 </style>
@@ -57,6 +94,7 @@
   <div class="grow"></div>
   <div class="chip" id="mode"></div>
   <div class="chip" id="keys"></div>
+  <div class="chip" id="cpuTotal"></div>
   <div class="chip" id="tokens"></div>
   <button class="chip ghchip" id="gh" onclick="toggleGh()" title="Open an incident pull request on GitHub for every fault"></button>
   <a href="http://localhost:8080" target="_blank"><button>Open storefront ↗</button></a>
@@ -72,6 +110,23 @@
       <button onclick="post('/api/reset')">↺ Reset all</button>
     </div>
     <div class="cards" id="cards"></div>
+    <div class="traces">
+      <div class="th"><h3>Distributed traces</h3>
+        <div class="seg" id="seg"></div><span class="hint" id="teleMeta" style="color:var(--muted);font-size:12px"></span></div>
+      <div id="traces"></div>
+    </div>
+    <div class="traces">
+      <div class="th"><h3>Metrics</h3><span class="hint" id="metMeta" style="color:var(--muted);font-size:12px"></span></div>
+      <div id="metrics"></div>
+      <div class="note">Latency and error rate come from OpenTelemetry histograms exported by each service, over the last minute.
+        They count <b>all</b> requests including the control plane's own health probes, so a quiet shop still shows a steady trickle.</div>
+    </div>
+    <div class="traces">
+      <div class="th"><h3>Logs</h3><div class="seg" id="logSeg"></div>
+        <select id="logSvc" onchange="logSvc=this.value;lastLogSig='';loadLogs()"></select>
+        <span class="hint" id="logMeta" style="color:var(--muted);font-size:12px"></span></div>
+      <div id="logs"></div>
+    </div>
   </section>
   <section class="feed"><h3>Activity</h3><div id="events"></div></section>
 </div>
@@ -80,6 +135,9 @@ const $ = id => document.getElementById(id);
 const openDiffs = new Set();
 let ghOn = false;
 const toggleGh = () => post("/api/github?enabled=" + !ghOn);
+const linkify = s => esc(s).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+const localTime = e => e.t ? new Date(e.t * 1000).toLocaleTimeString([], {hour12: false}) : e.ts;
+let lastSig = "";
 const esc = s => String(s).replace(/[&<>]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;"}[c]));
 
 async function post(url) {
@@ -94,7 +152,7 @@ const diffHtml = d => esc(d).split("\n").map(l =>
 
 function card(s) {
   const bad = ["broken", "down"].includes(s.status);
-  const fixable = (bad || s.bug) && !s.fixing;
+  const fixable = (bad || s.bug) && !s.fixing && (s.repair || {}).state !== "pending_approval";
   const buttons = !s.breakable ? "" : `<div class="btns">
     <button class="danger" ${s.status !== "healthy" ? "disabled" : ""} onclick="post('/api/services/${s.name}/break')">Break</button>
     <button class="primary" ${fixable ? "" : "disabled"} onclick="post('/api/services/${s.name}/fix?mode=ai')">✨ Fix with AI</button>
@@ -105,15 +163,179 @@ function card(s) {
     <span class="pill">${s.status}</span><span class="port">:${s.port}</span></div>
     <div class="about">${s.about}</div>
     ${s.detail ? `<div class="detail ${s.status === "blocked" ? "blocked" : ""}">${esc(s.detail)}</div>` : ""}
-    <div class="meta">${s.latency_ms != null ? `<span>probe ${s.latency_ms} ms</span>` : ""}
+    ${repairPanel(s)}
+    <div class="meta res"><span id="cpu-${s.name}">CPU n/a</span><span id="mem-${s.name}">MEM n/a</span><span id="tok-${s.name}">tokens 0</span><span id="tele-${s.name}">req n/a</span></div>
+    <svg class="spark" id="spark-${s.name}" viewBox="0 0 120 30" preserveAspectRatio="none"><polyline points=""/></svg>
+    <div class="meta">${s.latency_ms != null ? `<span id="lat-${s.name}">probe ${s.latency_ms} ms</span>` : ""}
       ${s.deps.length ? `<span>needs: ${s.deps.join(", ")}</span>` : ""}
       ${s.pr ? `<a class="pr ${s.pr.state}" href="${s.pr.url}" target="_blank"><span class="pr">PR #${s.pr.number} · ${s.pr.state}</span></a>` : ""}</div>
     ${fix}${buttons}</div>`;
 }
 
+const RLABEL = {pending_approval: ["Pending approval", "warn"], approved: ["Approved: deploying and verifying", "info"],
+  resolved: ["Resolved", "ok"], rejected: ["Rejected", "mute"], rolled_back: ["Rolled back", "bad"],
+  generating: ["Generating a fix…", "info"], failed: ["Proposal failed", "bad"]};
+const agoTime = t => new Date(t * 1000).toLocaleTimeString([], {hour12: false});
+
+function repairPanel(s) {
+  const r = s.repair || {state: "idle"};
+  const lab = RLABEL[r.state];
+  if (!lab) return "";
+  let body = "";
+  if (r.state === "pending_approval" && r.proposal) {
+    body = `<div class="rbody">Proposed by <b>${esc(r.proposal.how)}</b> · ${r.proposal.tokens} tokens. The running service has <b>not</b> been changed.</div>
+      <pre>${diffHtml(r.proposal.diff)}</pre>
+      <div class="btns" style="margin-top:8px"><button class="approve" onclick="post('/api/services/${s.name}/approve')">✓ Approve &amp; Apply</button>
+      <button class="danger" onclick="post('/api/services/${s.name}/reject')">✕ Reject</button></div>`;
+  } else if (r.state === "rolled_back" && r.rollback) {
+    body = `<div class="rbody">At ${agoTime(r.rollback.t)}: <b>${esc(r.rollback.reason)}</b><br>Restored the last known-good version
+      (${r.rollback.recovered ? "service healthy again" : "service still unhealthy"}). This incident is not marked resolved.</div>`;
+  } else if (r.state === "rejected") {
+    body = `<div class="rbody">The proposal was discarded. The service was not modified.</div>`;
+  } else if (r.state === "failed" && r.note) {
+    body = `<div class="rbody">${esc(r.note)}</div>`;
+  }
+  return `<div><div class="rstate ${lab[1]}">${lab[0]}</div>${body}</div>`;
+}
+
+// ---- distributed traces ------------------------------------------------------------------------
+let traceKind = "errors", openTrace = null, lastTraceSig = "", traceCache = {};
+const KINDS = [["errors", "Failing"], ["user", "Storefront traffic"], ["probe", "Health probes"], ["all", "All"]];
+function renderSeg() {
+  $("seg").innerHTML = KINDS.map(([k, l]) => `<button class="${k === traceKind ? "on" : ""}" onclick="setKind('${k}')">${l}</button>`).join("");
+}
+function setKind(k) { traceKind = k; lastTraceSig = ""; renderSeg(); loadTraces(); }
+function waterfall(d) {
+  const total = Math.max(d.duration_ms, 0.1);
+  return `<div class="wf">` + d.spans_detail.map(s => {
+    const left = Math.min(99, s.offset_ms / total * 100), w = Math.max(0.8, Math.min(100 - left, s.dur_ms / total * 100));
+    const st = s.http_status ? ` · ${s.http_status}` : "";
+    const err = s.error ? ` · ${esc((s.exception && s.exception.type) || s.message || "error")}` : "";
+    return `<div class="wfrow"><div class="nm" style="padding-left:${s.depth * 14}px" title="${esc(s.name)}"><b>${esc(s.service)}</b> <i>${esc(s.kind)}</i> ${esc(s.name)}</div>
+      <div class="wfbar"><span class="${s.error ? "e" : s.client_error ? "w" : ""}" style="left:${left}%;width:${w}%"></span></div>
+      <div class="d">${s.dur_ms} ms${st}${s.error ? `<br><span style="color:var(--bad)">${err.replace(" · ", "")}</span>` : ""}</div></div>`;
+  }).join("") + logsBlock(d) + `</div>`;
+}
+function logsBlock(d) {
+  if (!d.logs) return "";
+  const line = (r, t0) => `<div class="l"><span style="color:var(--muted)">+${Math.max(0, (r.t - t0) * 1000).toFixed(0)} ms</span><b>${esc(r.service)}</b><span class="lv ${r.level}">${r.level}</span><span>${esc(r.message.slice(0, 220))}</span></div>`;
+  const a = d.logs.by_trace || [], b = (d.logs.by_time || []).slice(0, 8);
+  if (!a.length && !b.length) return `<div class="wflogs"><h4>Logs</h4><div style="color:var(--muted)">No log lines were captured for this request.</div></div>`;
+  return `<div class="wflogs">${a.length ? `<h4>Logs stamped with this trace ID (${a.length})</h4>` + a.map(r => line(r, d.start)).join("") : ""}
+    ${b.length ? `<h4>Nearby logs from the same services, without a trace ID (matched by time only)</h4>` + b.map(r => line(r, d.start)).join("") : ""}</div>`;
+}
+async function toggleTrace(id) {
+  openTrace = openTrace === id ? null : id;
+  if (openTrace && !traceCache[id]) {
+    try {
+      traceCache[id] = await (await fetch("/api/traces/" + id)).json();
+      traceCache[id].logs = await (await fetch(`/api/traces/${id}/logs`)).json();
+    } catch {}
+  }
+  lastTraceSig = ""; loadTraces();
+}
+async function loadTraces() {
+  let list, tel;
+  try {
+    list = (await (await fetch(`/api/traces?kind=${traceKind}&limit=12`)).json()).traces;
+    tel = await (await fetch("/api/telemetry")).json();
+  } catch { return; }
+  $("teleMeta").textContent = tel.last_received ? `${tel.spans_received.toLocaleString()} spans received · OpenTelemetry (OTLP/HTTP)` : "waiting for spans…";
+  const sig = JSON.stringify([list.map(t => t.trace_id + t.spans), openTrace]);
+  if (sig === lastTraceSig) return;
+  lastTraceSig = sig;
+  if (!list.length) { $("traces").innerHTML = `<div class="empty">${traceKind === "errors" ? "No failing traces right now. Break a service, then use the storefront or wait for a probe." : "No traces yet."}</div>`; return; }
+  $("traces").innerHTML = list.map(t => {
+    const f = t.failing;
+    const why = f ? `<span class="bad">${esc(f.service)}: ${esc(f.name)}${f.http_status ? " → " + f.http_status : ""}${f.message ? " (" + esc(f.message) + ")" : ""}</span>` : "";
+    const open = openTrace === t.trace_id && traceCache[t.trace_id] ? waterfall(traceCache[t.trace_id]) : "";
+    return `<div class="tr ${t.error ? "err" : ""}" onclick="toggleTrace('${t.trace_id}')"><span class="t">${agoTime(t.start)}<br>${t.origin}</span>
+      <span class="root">${esc(t.root)}${why}</span><span class="svcs">${t.services.join(" → ")}</span><span class="dur">${t.duration_ms} ms</span></div>${open}`;
+  }).join("");
+}
+
+// ---- metrics (OpenTelemetry) ---------------------------------------------------------------------
+async function loadMetrics() {
+  let m, tel;
+  try { m = await (await fetch("/api/metrics")).json(); tel = await (await fetch("/api/telemetry")).json(); } catch { return; }
+  $("metMeta").textContent = tel.metrics_received ? `${tel.metrics_received.toLocaleString()} metric points · last ${m.window_s}s` : "waiting for metrics…";
+  const order = ["gateway", "catalog", "inventory", "cart", "payments", "orders"];
+  const rows = order.filter(s => m.services[s]).map(s => {
+    const v = m.services[s], f = n => n == null ? '<span class="dim">–</span>' : n;
+    return `<div class="mt"><b>${s}</b><span>${v.rate}</span><span class="${v.error_pct > 0 ? "bad" : ""}">${v.error_pct}%</span>
+      <span>${f(v.p50_ms)}</span><span class="${v.p95_ms > 200 ? "warn" : ""}">${f(v.p95_ms)}</span><span>${f(v.p99_ms)}</span>
+      <span>${v.active}</span><span class="dim">${v.total.toLocaleString()}</span></div>`;
+  });
+  $("metrics").innerHTML = rows.length ? `<div class="mt head"><span>Service</span><span>Req/s</span><span>Errors (5xx)</span><span>p50 ms</span><span>p95 ms</span><span>p99 ms</span><span>In flight</span><span>Total</span></div>` + rows.join("")
+    : `<div class="empty">Waiting for the first metrics (services export every 5 seconds)…</div>`;
+}
+
+// ---- logs (OpenTelemetry) -------------------------------------------------------------------------
+let logLevel = "warn", logSvc = "", lastLogSig = "", openLog = null, logDetail = {};
+const LKINDS = [["warn", "Warnings & errors"], ["all", "All logs"]];
+function renderLogSeg() {
+  $("logSeg").innerHTML = LKINDS.map(([k, l]) => `<button class="${k === logLevel ? "on" : ""}" onclick="logLevel='${k}';lastLogSig='';renderLogSeg();loadLogs()">${l}</button>`).join("");
+  const opts = ["", "gateway", "catalog", "inventory", "cart", "payments", "orders", "ops"];
+  $("logSvc").innerHTML = opts.map(o => `<option value="${o}" ${o === logSvc ? "selected" : ""}>${o || "all services"}</option>`).join("");
+}
+async function toggleLog(key, traceId) {
+  openLog = openLog === key ? null : key;
+  if (openLog && traceId && !traceCache[traceId]) {
+    try {
+      traceCache[traceId] = await (await fetch("/api/traces/" + traceId)).json();
+      traceCache[traceId].logs = await (await fetch(`/api/traces/${traceId}/logs`)).json();
+    } catch {}
+  }
+  lastLogSig = ""; loadLogs();
+}
+async function loadLogs() {
+  let r;
+  try { r = await (await fetch(`/api/logs?level=${logLevel}&limit=40${logSvc ? "&service=" + logSvc : ""}`)).json(); } catch { return; }
+  $("logMeta").textContent = r.received ? `${r.received.toLocaleString()} log records received` : "waiting for logs…";
+  const sig = JSON.stringify([r.logs.map(l => l.t + l.service), openLog]);
+  if (sig === lastLogSig) return;
+  lastLogSig = sig;
+  if (!r.logs.length) { $("logs").innerHTML = `<div class="empty">${logLevel === "warn" ? "No warnings or errors. Break a service and use the shop to see some." : "No logs yet."}</div>`; return; }
+  $("logs").innerHTML = r.logs.map(l => {
+    const key = l.t + l.service;
+    let more = "";
+    if (openLog === key) {
+      const tr = l.trace_id && traceCache[l.trace_id] ? waterfall(traceCache[l.trace_id]) : "";
+      more = `<div class="lgx">${l.stacktrace ? `<pre>${esc(l.stacktrace)}</pre>` : `<div class="m">${esc(l.message)}</div>`}${tr}</div>`;
+    }
+    return `<div class="lg" onclick="toggleLog('${key}', ${l.trace_id ? `'${l.trace_id}'` : "null"})"><span class="t">${agoTime(l.t)}</span><b>${esc(l.service)}</b>
+      <span class="lv ${l.level}">${l.level}</span><span class="m">${esc(l.message.split("\n")[0].slice(0, 200))}${l.exception ? ` <i style="color:var(--bad)">(${esc(l.exception)})</i>` : ""}</span>
+      ${l.trace_id ? `<span class="tid">trace ${l.trace_id.slice(0, 8)}</span>` : "<span></span>"}</div>${more}`;
+  }).join("");
+}
+
+function updateMetrics(st) {
+  let fleet = 0, any = false;
+  st.services.forEach(s => {
+    const set = (id, t) => { const el = $(id + "-" + s.name); if (el) el.textContent = t; };
+    set("cpu", s.cpu == null ? "CPU n/a" : `CPU ${s.cpu.toFixed(1)}%`);
+    set("mem", s.mem_mb == null ? "MEM n/a" : `MEM ${s.mem_mb.toFixed(0)} MB`);
+    set("tok", `tokens ${s.tokens.toLocaleString()}`);
+    set("tele", s.tele ? `${s.tele.requests_1m}/min · ${s.tele.error_pct}% err · p95 ${s.tele.p95_ms} ms` : "no user traffic");
+    if (s.latency_ms != null) set("lat", `probe ${s.latency_ms} ms`);
+    if (s.cpu != null) { fleet += s.cpu; any = true; }
+    const line = document.querySelector(`#spark-${s.name} polyline`);
+    if (line) {
+      const h = s.cpu_hist, top = Math.max(10, ...h), step = 120 / Math.max(1, h.length - 1);
+      line.setAttribute("points", h.map((v, i) => `${(i * step).toFixed(1)},${(28 - v / top * 26).toFixed(1)}`).join(" "));
+    }
+  });
+  $("cpuTotal").innerHTML = any ? `Fleet CPU <b>${fleet.toFixed(1)}%</b>` : "Fleet CPU <b>n/a</b>";
+}
+const LIVE = new Set(["latency_ms", "cpu", "mem_mb", "cpu_hist", "tele"]);
+
 async function refresh() {
   let st;
   try { st = await (await fetch("/api/state")).json(); } catch { return; }
+  // Skip the redraw when nothing changed: it would swallow clicks on links and lose scroll position.
+  const sig = JSON.stringify(st, (k, v) => LIVE.has(k) ? undefined : v);
+  if (sig === lastSig) { updateMetrics(st); return; }
+  lastSig = sig;
   const open = document.querySelector("details[open]");
   document.querySelectorAll("details[data-k]").forEach(d => d.open ? openDiffs.add(d.dataset.k) : openDiffs.delete(d.dataset.k));
   $("cards").innerHTML = st.services.map(card).join("");
@@ -130,10 +352,12 @@ async function refresh() {
   $("gh").className = "chip ghchip " + (g.enabled ? "live" : "mock");
   $("gh").innerHTML = !g.configured ? "GitHub <b>not set up</b>" : g.enabled ? `GitHub <b>on</b> · ${esc(g.repo)}` : `GitHub <b>off</b> · ${esc(g.repo)}`;
   $("gh").disabled = !g.configured;
-  $("events").innerHTML = st.events.map(e => `<div class="ev ${e.level}"><time>${e.ts}</time>
-    <div><em>${e.svc ? e.svc : "system"}</em>${esc(e.msg)}</div></div>`).join("");
+  updateMetrics(st);
+  $("events").innerHTML = st.events.map(e => `<div class="ev ${e.level}"><time>${localTime(e)}</time>
+    <div><em>${e.svc ? e.svc : "system"}</em>${linkify(e.msg)}</div></div>`).join("");
 }
-refresh(); setInterval(refresh, 1500);
+renderSeg(); renderLogSeg(); refresh(); setInterval(refresh, 1500); loadTraces(); setInterval(loadTraces, 3000);
+loadMetrics(); setInterval(loadMetrics, 4000); loadLogs(); setInterval(loadLogs, 3000);
 </script>
 </body>
 </html>

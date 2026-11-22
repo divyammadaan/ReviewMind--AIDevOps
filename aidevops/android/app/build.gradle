@@ -1,0 +1,24 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.reviewmind.aidevops'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.reviewmind.aidevops'
+        minSdk 26          // Android 8 and newer (the demo phone runs Android 10)
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.debug   // sideloaded demo build: debug-signed so it installs directly
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+// no dependencies on purpose: the app uses only what Android already ships, which keeps the APK tiny

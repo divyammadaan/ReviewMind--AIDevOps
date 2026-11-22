@@ -1,9 +1,10 @@
 # ReviewMind AIDevOps
 
 A containerised shop built from microservices that you can **break and repair from a dashboard**.
-An LLM (Groq) proposes repairs from the failing probe, the logs, a distributed trace and one small file.
-**A human approves every patch before it touches a running service**, and a patch that fails
-verification is **rolled back automatically**. Every request is traced with OpenTelemetry.
+A team of small LLM agents (Groq) triages the failure, writes a patch and reviews it, using the failing
+probe, the logs, a distributed trace and one small file. **A human approves every patch before it touches a
+running service** (from the dashboard or from a phone), a patch can be **tried on a canary first**, and a
+patch that fails verification is **rolled back automatically**. Every request is traced with OpenTelemetry.
 
 ```
  browser ──> gateway :8080 ──> catalog :9101
@@ -12,10 +13,13 @@ verification is **rolled back automatically**. Every request is traced with Open
                              ├> payments :9104
                              └> orders :9105 ──> cart, inventory, payments
 
- ops control plane :9000  ── probes services, injects faults, calls Groq, approves/applies/rolls back
-                              patches, and is the OTLP trace receiver (/v1/traces)
- metrics sidecar :9200    ── CPU and memory per container (the only Docker-socket holder)
+ <svc>-canary containers  ── a twin of every service; the gateway sends it a share of traffic during a canary
+ ops control plane :9000  ── probes services, injects faults, runs the agents, approves/applies/rolls back
+                              patches, serves the phone app (/m/), and is the OTLP receiver (traces/metrics/logs)
+ metrics sidecar :9200    ── CPU and memory per container (the only container-engine-socket holder)
 ```
+
+13 containers: gateway, 5 services, 5 canary twins, the control plane and the metrics sidecar.
 
 ## Run
 
@@ -28,6 +32,11 @@ docker compose up --build
 |---|---|
 | http://localhost:9000 | Control plane: break, propose, approve/reject, restore; metrics; distributed traces |
 | http://localhost:8080 | Storefront: watch it degrade when a service is broken |
+| http://localhost:9000/m/ | Phone app (installable web app): alerts, approve or reject fixes |
+
+**Settings** (chips in the dashboard header, also `POST /api/settings`): *Watchdog*, *Agents* and *Canary*.
+Defaults: watchdog off, agents on, canary off (`WATCHDOG`, `AGENTIC`, `CANARY`, `CANARY_PERCENT`,
+`CANARY_OBSERVE` in `../.env` set the starting values).
 
 ## Keys (all in `../.env`)
 
@@ -91,6 +100,124 @@ GITHUB_REPO=divyammadaan/ReviewMind--AIDevOps
 GITHUB_BASE_BRANCH=main            # optional
 ```
 
+## The agentic workflow
+
+With **Agents** on (the default), a repair is a small pipeline of specialised agents instead of one prompt:
+
+| Agent | Job |
+|---|---|
+| **Triage** | Reads the failing check, logs and trace and says in words what is probably wrong, and the rule the code should follow *in general* (no code) |
+| **Fixer** | Writes the patch, guided by the triage hypothesis |
+| **Reviewer** | Judges the patch **before a human sees it**: does it fix the defect in general, or only special-case the example in the failing check? It can send the patch back for one revision |
+| **Verifier** | Not an LLM: the compile + health-probe check after approval, with rollback |
+
+Triage and Reviewer use the cheaper model first. The dashboard shows each agent's summary, tokens and
+time. Agents are optional: if one fails, the pipeline carries on without it. Tested with the real model
+(`agents_test.py`): the Reviewer rejects the overfitted `amount <= 100` patch we once saw the Fixer write, and
+approves the correct fix. Turn agents off for a single Fixer (cheaper and faster).
+
+## Canary releases
+
+With **Canary** on, an approved patch is not written to the running service straight away:
+
+1. It is deployed to the service's `-canary` twin (a separate container running the same image).
+2. The gateway sends `CANARY_PERCENT` of that service's traffic to the canary for `CANARY_OBSERVE` seconds
+   (`X-Served-By` on every response says which instance answered). If the canary is unreachable the gateway
+   falls back to the stable instance, so a broken canary never costs a user a request.
+3. The canary must come up healthy, keep passing its health checks, and (if it served at least 5 real
+   requests) keep its error rate at or below 5%.
+4. Pass: the patch is promoted to the stable service and verified as before. Fail: the split is closed, the
+   stable service is **not touched**, and the incident shows *Canary failed*.
+
+Limitation: the split covers traffic that comes through the gateway (the storefront). Calls between services
+(for example orders to cart) go to the stable instances directly. Tested in `canary_test.py`.
+
+## Watchdog
+
+With **Watchdog** on, a service that stays broken or down gets a fix proposed **automatically**, once per
+incident, and you are alerted. A human still approves; nothing is applied. It will not re-propose after a
+rejection until the service has been healthy again.
+
+## Phone app (Android, installable web app)
+
+A 17 KB web app served by the control plane at `/m/`: no app store, no Firebase and no build tools. It shows
+service health, lists incidents, shows the proposed diff with the agents' summaries, and lets you **approve or
+reject** (a deliberate two-tap confirmation, never a button on the notification itself). Alerts use **Web
+Push** with VAPID keys generated on first start.
+
+- **Security.** The phone API (`/m/api/*`) needs the access token shown in the dashboard's *Phone app* panel
+  (set your own with `MOBILE_TOKEN` in `../.env`). The desktop dashboard (`/api/*`) has no login, so expose
+  only `/m/` to the phone.
+- **HTTPS is required** for alerts and installing (a browser rule), except on `localhost`. Tailscale gives the
+  phone a private HTTPS address. With Tailscale installed on this machine and on the phone (same account), and
+  HTTPS certificates enabled for your tailnet in the Tailscale admin console:
+  ```
+  tailscale serve --bg --set-path /m http://127.0.0.1:9000/m
+  tailscale serve status        # shows https://<machine>.<tailnet>.ts.net/m
+  ```
+  (Command syntax can differ between Tailscale versions; see its docs if that one is rejected.)
+- **On the phone (Android 10+, Chrome):** open that address, enter the token, tap *Enable alerts*, then Chrome's
+  menu, *Add to Home screen*. The laptop must be on with the stack running.
+- Verified: the encrypted push messages, VAPID signature, token protection, watchdog, approve/reject
+  (`mobile_test.py`) and the app in desktop Chrome. **Not verified: delivery to a physical phone.**
+
+## Simulated traffic
+
+A **Traffic** chip on the dashboard (or `POST /api/settings?traffic_enabled=true`) starts simulated shoppers who browse,
+fill carts and check out through the gateway. The rate rises and falls on its own, between about 1 and 20 requests per
+second (`TRAFFIC_MAX`, default 20), with occasional bursts. It cannot overload the shop: at most 8 requests are in flight,
+a request that cannot start is dropped rather than queued, and the rate falls to the minimum if the shop becomes slow or
+mostly fails. Checkouts only use products 2 to 6, because product 1 is what the health probes measure. A warehouse job tops
+the stock up. Off by default (`TRAFFIC=on` to start with it on). Test: `python tests/traffic_test.py`.
+
+## Android app
+
+A native Android app (about 28 KB, plain Java, no libraries) in `android/`. It needs no Google push service, no
+HTTPS and no Tailscale: it works over the same Wi-Fi as the laptop.
+
+- **Services**: live health of every service, with the Watchdog / Agents / Canary settings.
+- **Incident**: what is wrong, the AI's diff, the agent steps and tokens used. **Approve** needs two taps within
+  6 seconds; **Reject** discards the proposal. Nothing is applied before approval.
+- **Alerts**: a background service checks every few seconds (3 / 5 / 10 / 30 s, set in Settings) and raises real
+  Android notifications ("Cart is broken", "Fix ready for Cart"). Tapping a notification only opens the app.
+- **Settings**: server address and token, alert switch, check interval, battery exemption, disconnect.
+
+Install: copy `android/dist/ReviewMindOps.apk` to the phone, allow "install unknown apps", open it. Enter the laptop's
+IP and port (`ipconfig`, for example `192.168.1.5:9000`) and the access token from the dashboard's Phone panel.
+Windows Firewall must allow inbound TCP 9000 (admin PowerShell:
+`New-NetFirewallRule -DisplayName "ReviewMind ops" -Direction Inbound -Protocol TCP -LocalPort 9000 -Action Allow`).
+
+Build (Android Studio's bundled JDK and the SDK are enough):
+`cd android; $env:JAVA_HOME="C:\Program Files\Android\Android Studio\jbr"; .\gradlew.bat assembleRelease`.
+
+Tested on an Android 15 emulator against the live stack: connect, wrong-token and unreachable-server messages, break
+a service and receive both alerts, review the diff, two-tap approve through to verified, reject, alert history.
+Not yet tested on a physical phone, and Android may pause background apps unless the battery exemption is granted.
+
+## Running on Podman
+
+The stack is runtime-neutral: the only engine-specific part is the metrics sidecar's socket mount, set by
+`CONTAINER_SOCK`. On Windows, with Podman Desktop installed and `../.env` created:
+
+```powershell
+cd aidevops
+.\podman-up.ps1          # starts the Podman machine, finds its socket, runs `podman compose up --build -d`
+```
+
+By hand: `podman machine start`, then
+`$env:CONTAINER_SOCK = (podman info --format "{{.Host.RemoteSocket.Path}}")` and `podman compose up --build -d`.
+`podman compose` needs a compose provider (`docker-compose` or `pip install podman-compose`). Podman runs
+rootless, with no always-running root daemon, which is its main advantage over Docker.
+
+**Status: tested on Podman 5 (rootless, WSL machine, Windows 11).** All 13 containers start and the
+workflow, canary, agents, telemetry, observability and phone-app suites pass with `CONTAINER_CLI=podman`
+(the test scripts and `scripts/preflight.py` use that variable to pick the engine). Known differences:
+- Rootless Podman reports no container memory figure, so the dashboard shows memory as "n/a" (CPU is fine).
+- Windows Firewall blocks the Podman VM from reaching the host, so the phone-app test runs its stand-in push
+  service inside the `ops` container (`PUSH_SINK=inside`, the default on Podman).
+- `tests/docker-compose.mock.yml` (GitHub mock) uses Docker's `host-gateway`; it is not run on Podman.
+- Not tested: alerts to a physical phone, and the Tailscale HTTPS path.
+
 ## Observability (OpenTelemetry: traces, metrics and logs)
 
 Every service and the control plane are instrumented **without editing the service code**:
@@ -150,6 +277,9 @@ Everything below runs against the real stack; nothing is mocked. With the stack 
 python tests/workflow_test.py     # approval, rejection, failed verification, timeout, poison patch, guard rails (54 checks)
 python tests/telemetry_test.py    # trace propagation, failure localisation, probe labelling, collector down (27 checks)
 python tests/observability_test.py # metrics vs real traffic, error rates, stack-trace logs, log/trace linking (26 checks)
+python tests/agents_test.py       # Triage/Fixer/Reviewer on the real model; the Reviewer catches an overfitted patch (20 checks)
+python tests/canary_test.py       # real traffic split, good patch promoted, bad patch stopped, down canary harmless (31 checks)
+python tests/mobile_test.py       # phone API + token, real encrypted push, VAPID signature, watchdog, approve from phone (39 checks)
 python tests/repair_all.py        # inject all 15 faults, AI-repair each (auto_approve), count only VERIFIED repairs
 python tests/repair_all.py --mode golden   # same without the LLM (no API calls)
 ```
@@ -174,8 +304,11 @@ All fault injection in the tests uses `report=false`, so running them never open
 ```
 golden/<service>/main.py   known-good code (also the restore point)
 golden/gateway/            edge proxy + storefront UI
-ops/                       control plane: main.py, probes.py, bugs.py, fixer.py, github.py, telemetry.py (traces),
-                           signals.py (metrics + logs), static/index.html
+ops/                       control plane: main.py, probes.py, bugs.py, fixer.py, agents.py, canary.py, notify.py,
+                           github.py, telemetry.py (traces), signals.py (metrics + logs), static/index.html
+ops/static/m/              the phone app (index.html, sw.js, manifest.json, icons)
+serve.sh                   how every service container starts (shared by Docker and Podman)
+podman-up.ps1              one-command start on Podman (Windows)
 otel/sitecustomize.py      OpenTelemetry bootstrap loaded into every process
 metrics/                   CPU/memory sidecar
 tests/                     end-to-end tests (see above)

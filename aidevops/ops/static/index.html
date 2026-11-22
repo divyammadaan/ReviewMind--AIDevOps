@@ -82,6 +82,10 @@
   .lgx pre{max-height:260px}.wflogs{margin-top:10px;font-size:12px}.wflogs h4{margin:8px 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
   .wflogs .l{display:grid;grid-template-columns:62px 80px 52px minmax(0,1fr);gap:8px;padding:2px 0;font-family:ui-monospace,Consolas,monospace;font-size:11.5px}
   .empty{color:var(--muted);font-size:13px;padding:14px 6px}
+  .agents{margin-top:6px;font-size:12px;color:var(--muted)}.agents div{padding:2px 0}.agents b{color:var(--ink)}
+  .agents .rev{color:var(--warn)}.cbar{height:6px;border-radius:99px;background:#1b2030;overflow:hidden;margin:6px 0}.cbar i{display:block;height:100%;background:var(--info);transition:width .6s}
+  .phone code{background:#0d1019;border:1px solid var(--line);border-radius:6px;padding:2px 6px;overflow-wrap:anywhere}
+  .phone ol{color:var(--muted);font-size:13px;padding-left:20px;margin:8px 0}.phone li{margin:3px 0}
   .ev{display:grid;grid-template-columns:62px minmax(0,1fr);gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
   .ev div{overflow-wrap:anywhere}.ev a{color:var(--info)}
   .ev time{color:var(--muted);font-size:11px;padding-top:2px}.ev em{font-style:normal;font-weight:700;margin-right:6px}
@@ -97,6 +101,10 @@
   <div class="chip" id="cpuTotal"></div>
   <div class="chip" id="tokens"></div>
   <button class="chip ghchip" id="gh" onclick="toggleGh()" title="Open an incident pull request on GitHub for every fault"></button>
+  <button class="chip ghchip" id="wd" onclick="setSetting('watchdog=' + !S.watchdog)" title="Watchdog: prepare a fix automatically when a service fails (a human still approves)"></button>
+  <button class="chip ghchip" id="ag" onclick="setSetting('agentic=' + !S.agentic)" title="Agents: Triage, Fixer and Reviewer work together on every fix"></button>
+  <button class="chip ghchip" id="cn" onclick="setSetting('canary_enabled=' + !S.canary.enabled)" title="Canary: try an approved patch on a share of traffic before promoting it"></button>
+  <button class="chip ghchip" id="tf" onclick="setSetting('traffic_enabled=' + !S.traffic.enabled)" title="Traffic: simulated shoppers browse, fill carts and check out at a gentle, varying rate (variable, never more than 20 requests per second)"></button>
   <a href="http://localhost:8080" target="_blank"><button>Open storefront ↗</button></a>
 </div>
 <div class="wrap">
@@ -127,13 +135,18 @@
         <span class="hint" id="logMeta" style="color:var(--muted);font-size:12px"></span></div>
       <div id="logs"></div>
     </div>
+    <div class="traces phone">
+      <div class="th"><h3>Phone app</h3><span class="hint" id="phoneMeta" style="color:var(--muted);font-size:12px"></span></div>
+      <div id="phone"></div>
+    </div>
   </section>
   <section class="feed"><h3>Activity</h3><div id="events"></div></section>
 </div>
 <script>
 const $ = id => document.getElementById(id);
 const openDiffs = new Set();
-let ghOn = false;
+let ghOn = false, S = {watchdog: false, agentic: true, canary: {enabled: false, percent: 30}, traffic: {enabled: false, rps: 0, sent: 0, errors: 0}};
+const setSetting = q => post("/api/settings?" + q);
 const toggleGh = () => post("/api/github?enabled=" + !ghOn);
 const linkify = s => esc(s).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
 const localTime = e => e.t ? new Date(e.t * 1000).toLocaleTimeString([], {hour12: false}) : e.ts;
@@ -174,9 +187,21 @@ function card(s) {
 
 const RLABEL = {pending_approval: ["Pending approval", "warn"], approved: ["Approved: deploying and verifying", "info"],
   resolved: ["Resolved", "ok"], rejected: ["Rejected", "mute"], rolled_back: ["Rolled back", "bad"],
-  generating: ["Generating a fix…", "info"], failed: ["Proposal failed", "bad"]};
+  generating: ["Agents are working on a fix…", "info"], failed: ["Proposal failed", "bad"],
+  canary: ["Canary rollout", "info"], canary_failed: ["Canary failed", "bad"]};
 const agoTime = t => new Date(t * 1000).toLocaleTimeString([], {hour12: false});
 
+function agentsHtml(p) {
+  if (!p || !p.agents || !p.agents.length) return "";
+  return `<div class="agents">${p.agents.map(a => `<div class="${a.verdict === "revise" ? "rev" : ""}"><b>${esc(a.agent)}</b>${a.tokens ? ` · ${a.tokens} tok` : ""}${a.seconds != null ? ` · ${a.seconds}s` : ""}: ${esc(a.summary)}</div>`).join("")}</div>`;
+}
+function canaryHtml(r) {
+  const c = r.canary;
+  if (!c) return "";
+  const pct = r.state === "canary" ? Math.min(100, (Date.now() / 1000 - c.started) / c.observe_s * 100) : 100;
+  return `<div class="rbody"><div class="cbar"><i style="width:${pct}%"></i></div>Canary: ${c.percent}% of traffic · ${c.probes_ok} health checks passed${c.probes_failed ? `, <b>${c.probes_failed} failed</b>` : ""} ·
+    ${c.requests} real requests${c.requests ? `, ${c.errors} errors` : " (health-check gated)"} · <b>${esc(c.result)}</b></div>`;
+}
 function repairPanel(s) {
   const r = s.repair || {state: "idle"};
   const lab = RLABEL[r.state];
@@ -190,12 +215,14 @@ function repairPanel(s) {
   } else if (r.state === "rolled_back" && r.rollback) {
     body = `<div class="rbody">At ${agoTime(r.rollback.t)}: <b>${esc(r.rollback.reason)}</b><br>Restored the last known-good version
       (${r.rollback.recovered ? "service healthy again" : "service still unhealthy"}). This incident is not marked resolved.</div>`;
+  } else if (r.state === "canary_failed") {
+    body = `<div class="rbody"><b>${esc(r.note)}</b><br>The patch was not promoted. The running service was not changed.</div>`;
   } else if (r.state === "rejected") {
     body = `<div class="rbody">The proposal was discarded. The service was not modified.</div>`;
   } else if (r.state === "failed" && r.note) {
     body = `<div class="rbody">${esc(r.note)}</div>`;
   }
-  return `<div><div class="rstate ${lab[1]}">${lab[0]}</div>${body}</div>`;
+  return `<div><div class="rstate ${lab[1]}">${lab[0]}</div>${body}${canaryHtml(r)}${agentsHtml(r.proposal)}</div>`;
 }
 
 // ---- distributed traces ------------------------------------------------------------------------
@@ -309,6 +336,18 @@ async function loadLogs() {
   }).join("");
 }
 
+async function loadPhone() {
+  let m;
+  try { m = await (await fetch("/api/mobile/info")).json(); } catch { return; }
+  $("phoneMeta").textContent = `${m.subscribers} phone(s) subscribed to alerts · ${m.sent} sent · ${m.failed} failed`;
+  $("phone").innerHTML = `<div style="font-size:13px">Install a small web app on your Android phone to get alerts and approve or reject AI fixes.
+    <ol><li>Make this machine reachable from the phone over HTTPS (README, "Phone app": Tailscale does it in two commands).</li>
+    <li>On the phone, open <code>https://&lt;your-machine&gt;.ts.net/m/</code> in Chrome and enter the token below.</li>
+    <li>Tap <b>Enable alerts</b>, then Chrome's menu → <b>Add to Home screen</b>.</li></ol>
+    Access token: <code>${esc(m.token)}</code> &nbsp; Local test page: <a href="/m/" target="_blank" style="color:var(--info)">/m/</a>
+    ${m.last_error ? `<div style="color:var(--warn);margin-top:6px">Last push problem: ${esc(m.last_error)}</div>` : ""}</div>`;
+}
+
 function updateMetrics(st) {
   let fleet = 0, any = false;
   st.services.forEach(s => {
@@ -352,12 +391,16 @@ async function refresh() {
   $("gh").className = "chip ghchip " + (g.enabled ? "live" : "mock");
   $("gh").innerHTML = !g.configured ? "GitHub <b>not set up</b>" : g.enabled ? `GitHub <b>on</b> · ${esc(g.repo)}` : `GitHub <b>off</b> · ${esc(g.repo)}`;
   $("gh").disabled = !g.configured;
+  S = st.settings;
+  const sw = (id, label, on, extra) => { $(id).className = "chip ghchip " + (on ? "live" : "mock"); $(id).innerHTML = `${label} <b>${on ? "on" : "off"}</b>${extra || ""}`; };
+  sw("wd", "Watchdog", S.watchdog); sw("ag", "Agents", S.agentic); sw("cn", "Canary", S.canary.enabled, S.canary.enabled ? ` · ${S.canary.percent}%` : "");
+  sw("tf", "Traffic", S.traffic.enabled, S.traffic.enabled ? ` · ${S.traffic.rps}/s · ${S.traffic.sent.toLocaleString()} sent` : "");
   updateMetrics(st);
   $("events").innerHTML = st.events.map(e => `<div class="ev ${e.level}"><time>${localTime(e)}</time>
     <div><em>${e.svc ? e.svc : "system"}</em>${linkify(e.msg)}</div></div>`).join("");
 }
 renderSeg(); renderLogSeg(); refresh(); setInterval(refresh, 1500); loadTraces(); setInterval(loadTraces, 3000);
-loadMetrics(); setInterval(loadMetrics, 4000); loadLogs(); setInterval(loadLogs, 3000);
+loadMetrics(); setInterval(loadMetrics, 4000); loadLogs(); setInterval(loadLogs, 3000); loadPhone(); setInterval(loadPhone, 8000);
 </script>
 </body>
 </html>

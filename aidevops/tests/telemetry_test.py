@@ -72,6 +72,12 @@ r = httpx.post(f"{GW}/orders/checkout/{user}", timeout=15)
 check(r.status_code >= 500, "the storefront request fails", str(r.status_code))
 t = find_trace("errors", f"/api/orders/checkout/{user}")
 check(t is not None and t["error"], "the failing request appears in the Failing traces list")
+# each service exports its spans in its own batch, so the gateway's span can arrive before orders': wait for the full trace
+for _ in range(15):
+    if t and t["failing"]["service"] == "orders":
+        break
+    time.sleep(1)
+    t = find_trace("errors", f"/api/orders/checkout/{user}")
 f = t["failing"]
 check(f["service"] == "orders" and "ConnectError" in f["message"] and "9140" in (f.get("calling") or ""),
       "failure localised: orders -> payments:9140 ConnectError", str(f))

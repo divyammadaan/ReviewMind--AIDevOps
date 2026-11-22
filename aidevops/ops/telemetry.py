@@ -173,6 +173,12 @@ class TraceStore:
                             "p50_ms": durs[len(durs) // 2]}
         return out
 
+    def counts(self, service):
+        """(requests, errors) of real user traffic seen by a service so far (probe traffic excluded)."""
+        with self.lock:
+            dq = self.reqs.get(service)
+            return (len(dq), sum(1 for r in dq if r[2])) if dq else (0, 0)
+
     def failure_hint(self, service, max_chars=450):
         """One short description of the newest failing trace involving `service`, for the repair prompt."""
         with self.lock:

@@ -11,7 +11,7 @@ import time
 
 import httpx
 
-from common import (GW, check, break_service, docker, events, finish, golden_code, live_code, post, reset_all,
+from common import (GW, check, has_discount_fix, break_service, docker, events, finish, golden_code, live_code, post, reset_all,
                     svc, wait)
 
 
@@ -34,7 +34,7 @@ broken_code = live_code("cart")
 check(post("/api/services/cart/fix", mode="ai").status_code == 200, "Fix with AI accepted")
 check(wait(lambda: svc("cart")["repair"]["state"] == "pending_approval", 90), "state becomes Pending Approval")
 p = svc("cart")["repair"]["proposal"]
-check(bool(p) and "0.10" in p["diff"] and p["tokens"] > 0, "a real diff is shown for review", str(p)[:200])
+check(bool(p) and has_discount_fix(p["diff"]) and p["tokens"] > 0, "a real diff is shown for review", str(p)[:200])
 check(live_code("cart") == broken_code, "running service file NOT modified while pending")
 time.sleep(5)
 check(svc("cart")["status"] in ("broken", "down"), "service still broken while pending")
@@ -123,6 +123,20 @@ check(break_service("inventory", "inventory-keyerror"), "inventory broken")
 check(post("/api/services/inventory/fix", mode="ai", auto_approve="true").status_code == 200, "fix with auto_approve")
 check(wait(lambda: svc("inventory")["repair"]["state"] == "resolved", 90), "AI patch applied and verified")
 check(any("Auto-approve is on" in e["msg"] for e in events()), "auto-approval is logged loudly, never silent")
+
+# ---------------------------------------------------------------------------------------------
+print("\n== 7. Break still works after a repair reworded the code (0.10 became 0.1)")
+check(break_service("cart", "cart-overwrite"), "cart broken (overwrites quantity)")
+reworded = golden_code("cart").replace("0.10", "0.1")
+check(reworded != golden_code("cart"), "built an equivalent repair that is spelled differently")
+httpx.post("http://localhost:9000/api/services/cart/propose", json={"code": reworded}, timeout=20)
+post("/api/services/cart/approve")
+check(wait(lambda: svc("cart")["repair"]["state"] == "resolved", 60), "the reworded repair is applied and verified")
+check("0.10" not in live_code("cart"), "the live code no longer contains the original spelling")
+check(break_service("cart", "cart-discount"), "the discount fault can still be injected (falls back to the original code as its base)")
+check("total * 10" in live_code("cart"), "and it really is injected")
+post("/api/services/cart/fix", mode="golden")
+wait(lambda: svc("cart")["status"] == "healthy", 40)
 
 reset_all()
 finish()

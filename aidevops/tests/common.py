@@ -1,4 +1,5 @@
 """Helpers shared by the end-to-end tests. They talk to the real running stack."""
+import os
 import subprocess
 import sys
 import time
@@ -7,6 +8,7 @@ import httpx
 
 OPS, GW = "http://localhost:9000", "http://localhost:8080/api"
 RESULTS = {"pass": 0, "fail": 0}
+ENGINE = os.getenv("CONTAINER_CLI", "docker")  # set CONTAINER_CLI=podman to run the tests against Podman
 
 
 def state():
@@ -45,17 +47,17 @@ def post(path, **params):
 
 def live_code(name):
     """The service's main.py as it is on the shared volume right now."""
-    return subprocess.run(["docker", "exec", "aidevops-ops", "cat", f"/runtime/{name}/main.py"],
+    return subprocess.run([ENGINE, "exec", "aidevops-ops", "cat", f"/runtime/{name}/main.py"],
                           capture_output=True, text=True, encoding="utf-8", check=True).stdout
 
 
 def golden_code(name):
-    return subprocess.run(["docker", "exec", "aidevops-ops", "cat", f"/golden/{name}/main.py"],
+    return subprocess.run([ENGINE, "exec", "aidevops-ops", "cat", f"/golden/{name}/main.py"],
                           capture_output=True, text=True, encoding="utf-8", check=True).stdout
 
 
 def docker(*args):
-    return subprocess.run(["docker", *args], capture_output=True, text=True, encoding="utf-8")
+    return subprocess.run([ENGINE, *args], capture_output=True, text=True, encoding="utf-8")
 
 
 def break_service(name, bug_id):
@@ -73,3 +75,9 @@ def reset_all():
 def finish():
     print(f"\n{RESULTS['pass']} passed, {RESULTS['fail']} failed")
     sys.exit(1 if RESULTS["fail"] else 0)
+
+
+def has_discount_fix(text):
+    """True if the code multiplies by a 10% rate however it is spelled (0.10, 0.1, .1 ...)."""
+    import re
+    return bool(re.search(r"[*]\s*0?[.]10?(?![0-9])", text))

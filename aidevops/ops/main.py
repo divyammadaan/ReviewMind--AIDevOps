@@ -7,6 +7,7 @@ memory come from the metrics sidecar, which is the only container with the Docke
 import difflib
 import os
 import random
+import secrets
 import shutil
 import threading
 import time
@@ -16,16 +17,20 @@ from pathlib import Path
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
 from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
 
 load_dotenv()
 
+import agents  # noqa: E402
+import canary  # noqa: E402
 import fixer  # noqa: E402  (needs env loaded first)
 import github as ghmod  # noqa: E402
 import signals  # noqa: E402
 import telemetry  # noqa: E402
+import traffic  # noqa: E402
+from notify import notifier  # noqa: E402
 from bugs import BUGS  # noqa: E402
 from probes import DEPS, PROBES, Fail  # noqa: E402
 
@@ -41,6 +46,17 @@ META = {
 VERIFY_TIMEOUT = int(os.getenv("VERIFY_TIMEOUT", "14"))  # seconds a deployed patch gets to pass its probe
 GRACE = 6  # seconds after a file write during which a failure counts as "restarting"
 
+# Runtime switches, all changeable from the dashboard. Everything defaults to the safe, simple behaviour.
+settings = {
+    "watchdog": os.getenv("WATCHDOG", "off").lower() == "on",   # prepare a fix automatically when a service fails
+    "agentic": os.getenv("AGENTIC", "on").lower() != "off",     # triage + fixer + reviewer agents
+    "canary": {"enabled": os.getenv("CANARY", "off").lower() == "on",
+               "percent": int(os.getenv("CANARY_PERCENT", "30")),
+               "observe_s": int(os.getenv("CANARY_OBSERVE", "18"))},
+    # simulated shoppers (see traffic.py): gentle, variable and capped, so the charts and the canary have traffic
+    "traffic": {"enabled": os.getenv("TRAFFIC", "off").lower() == "on", "rps": 0.0, "sent": 0, "errors": 0},
+}
+
 keys = fixer.Keys()
 events: deque = deque(maxlen=80)
 lock = threading.Lock()
@@ -48,7 +64,8 @@ svcs = {n: {"name": n, "title": t, "about": a, "port": p, "breakable": n != "gat
             "status": "starting", "detail": "", "latency_ms": None, "bug": None,
             "last_fix": None, "written_at": 0.0, "fixing": False, "raw_ok": False, "down": False,
             "incident": None, "tokens": 0, "cpu": None, "mem_mb": None, "cpu_hist": deque(maxlen=40),
-            "last_good": None, "repair": {"state": "idle", "proposal": None, "rollback": None, "note": ""}}
+            "last_good": None, "alerted": False, "wd_tried": False,
+            "repair": {"state": "idle", "proposal": None, "rollback": None, "note": "", "canary": None}}
         for n, (t, a, p) in META.items()}
 
 
@@ -61,7 +78,7 @@ def live_file(n):
 
 
 def new_repair():
-    return {"state": "idle", "proposal": None, "rollback": None, "note": ""}
+    return {"state": "idle", "proposal": None, "rollback": None, "note": "", "canary": None}
 
 
 def set_repair(n, state, **kw):
@@ -74,9 +91,12 @@ def reset_runtime():
     for n in BUGS:
         (RUNTIME / n).mkdir(parents=True, exist_ok=True)
         shutil.copyfile(GOLDEN / n / "main.py", live_file(n))
+        (RUNTIME / f"{n}-canary").mkdir(parents=True, exist_ok=True)  # the canary twin starts from the same code
+        shutil.copyfile(GOLDEN / n / "main.py", RUNTIME / f"{n}-canary" / "main.py")
         svcs[n].update(bug=None, last_fix=None, written_at=time.time(), repair=new_repair(),
                        last_good=(GOLDEN / n / "main.py").read_text(encoding="utf-8"))
     (RUNTIME / "logs").mkdir(parents=True, exist_ok=True)
+    canary.clear_routes()
 
 
 def log_tail(n, lines=14):
@@ -110,20 +130,21 @@ except Exception:  # telemetry is optional
     suppress_instrumentation = contextlib.nullcontext
 
 
-def probe_once(n):
-    """Return (ok, detail, is_down, latency_ms). Traced as origin=probe (propagated to every service)."""
+def probe_once(n, urls=None):
+    """Return (ok, detail, is_down, latency_ms). Traced as origin=probe (propagated to every service).
+    `urls` points the probe at another copy of the service, for example its canary."""
     token = _otel_ctx.attach(_baggage.set_baggage("origin", "probe")) if _otel_ctx else None
     try:
-        return _probe_once(n)
+        return _probe_once(n, urls)
     finally:
         if token:
             _otel_ctx.detach(token)
 
 
-def _probe_once(n):
+def _probe_once(n, urls=None):
     t0 = time.time()
     try:
-        PROBES[n]()
+        PROBES[n](urls) if urls else PROBES[n]()
         return True, "", False, round((time.time() - t0) * 1000)
     except Fail as e:
         return False, str(e), False, None
@@ -159,6 +180,25 @@ def monitor():
                         s["detail"] = f"upstream unhealthy: {', '.join(bad)}. Not this service's fault yet."
                     else:
                         s["status"] = "down" if s["down"] else "broken"
+            alerts, auto = [], []
+            for n, s in svcs.items():
+                failing = s["status"] in ("broken", "down")
+                s["bad_cycles"] = s.get("bad_cycles", 0) + 1 if failing else 0
+                confirmed = s["bad_cycles"] >= 2  # two checks in a row: ignore the blip while services restart together
+                if confirmed and not s["alerted"]:
+                    s["alerted"] = True
+                    alerts.append(n)
+                elif s["status"] == "healthy":
+                    s["alerted"], s["wd_tried"] = False, False
+                if (settings["watchdog"] and keys.live and s["breakable"] and confirmed
+                        and not s["fixing"] and not s["wd_tried"] and s["repair"]["state"] == "idle"):
+                    s["wd_tried"], s["fixing"] = True, True
+                    auto.append(n)
+        for n in alerts:  # outside the lock: sending a push can take a moment
+            notifier.notify("incident", n, f"{svcs[n]['title']} is {svcs[n]['status']}", svcs[n]["detail"][:140] or "Failing its health check.")
+        for n in auto:
+            log("info", "Watchdog: failure detected, preparing a fix for approval.", n)
+            threading.Thread(target=propose_ai, args=(n, False), daemon=True).start()
         time.sleep(3)
 
 
@@ -199,7 +239,7 @@ def wait_settled(n):
 def mark_healthy(n):
     """A probe just passed: show it now rather than at the next monitoring cycle."""
     with lock:
-        svcs[n].update(raw_ok=True, down=False, detail="", status="healthy")
+        svcs[n].update(raw_ok=True, down=False, detail="", status="healthy", alerted=False, wd_tried=False, bad_cycles=0)
 
 
 def wait_healthy(n, seconds=14):
@@ -246,12 +286,20 @@ def make_proposal(n, before, new_code, how, tokens, source, symptom, t0):
 def publish_proposal(n, proposal):
     set_repair(n, "pending_approval", proposal=proposal, rollback=None, note="")
     log("info", f"Proposed fix ready ({proposal['how']}). Waiting for human approval; nothing has been applied.", n)
+    notifier.notify("approval", n, f"Fix ready for {svcs[n]['title']}", f"{proposal['how']}. Review the diff and approve or reject.")
     pr_note(n, f"## Proposed fix, pending approval\n\nSource: **{proposal['how']}**. Nothing has been deployed yet.\n\n"
                f"```diff\n{proposal['diff'].strip()}\n```")
 
 
+def _changed_lines(before, after):
+    return sum(1 for line in diff(before, after).splitlines() if line[:1] in "+-" and line[:3] not in ("+++", "---"))
+
+
 def propose_ai(n, auto_approve=False):
-    """Generate a patch with the LLM and hold it for approval. Does NOT touch the running service."""
+    """Generate a patch with the LLM and hold it for approval. Does NOT touch the running service.
+
+    With agents on, a Triage agent first says what is probably wrong, and a Reviewer agent judges the patch
+    (and can send it back once) before a human ever sees it."""
     s = svcs[n]
     t0 = time.time()
     try:
@@ -265,10 +313,25 @@ def propose_ai(n, auto_approve=False):
             return
         logs, hint = log_tail(n), telemetry.store.failure_hint(n)
         log("info", f"Diagnosing. Symptom: {symptom[:160]}", n)
-        note, total_tokens, proposal = "", 0, None
-        for attempt in (1, 2):
+        steps, total_tokens, triage_note = [], 0, ""
+
+        if settings["agentic"]:
             try:
-                new_code, meta = fixer.ask(keys, build_prompt(n, before, symptom, logs, note, hint))
+                tri = agents.triage(keys, n, symptom, logs, hint, before)
+                steps.append(tri)
+                total_tokens += tri["tokens"]
+                s["tokens"] += tri["tokens"]
+                triage_note = (f"\nTriage agent's hypothesis: {tri['summary']} Suspect: {tri['suspect']}. "
+                               f"In general the code should: {tri['general_rule']}\n")
+                log("info", f"Triage agent: {tri['summary'][:170]}", n)
+            except Exception as e:  # agents are optional: carry on without them
+                log("warn", f"Triage agent skipped: {str(e)[:120]}", n)
+
+        note, proposal = "", None
+        for attempt in (1, 2):
+            tf = time.time()
+            try:
+                new_code, meta = fixer.ask(keys, build_prompt(n, before, symptom, logs, triage_note + note, hint))
             except RuntimeError as e:
                 log("err", str(e)[:300], n)
                 set_repair(n, "failed", note=str(e)[:200])
@@ -281,6 +344,8 @@ def propose_ai(n, auto_approve=False):
                 log("warn", f"Attempt {attempt}: model returned invalid Python ({e.msg}).", n)
                 note = f"\nYour previous reply was not valid Python ({e.msg}). Return the full corrected file."
                 continue
+            steps.append({"agent": "Fixer", "summary": f"Wrote a patch ({_changed_lines(before, new_code)} lines changed).",
+                          "tokens": meta["tokens"], "seconds": round(time.time() - tf, 1), "model": meta["model"]})
             proposal = make_proposal(n, before, new_code, f"AI ({meta['model']}, {meta['key']} key)",
                                      total_tokens, "ai", symptom, t0)
             break
@@ -288,6 +353,37 @@ def propose_ai(n, auto_approve=False):
             log("err", "The model did not return valid Python. No proposal was made.", n)
             set_repair(n, "failed", note="model returned invalid Python twice")
             return
+
+        if settings["agentic"]:
+            for rnd in (1, 2):
+                try:
+                    rv = agents.review(keys, n, symptom, before, proposal["diff"])
+                except Exception as e:
+                    log("warn", f"Reviewer agent skipped: {str(e)[:120]}", n)
+                    break
+                steps.append(rv)
+                total_tokens += rv["tokens"]
+                s["tokens"] += rv["tokens"]
+                log("info" if rv["verdict"] == "approve" else "warn", f"Reviewer agent: {rv['summary'][:170]}", n)
+                if rv["verdict"] == "approve" or rnd == 2:
+                    break
+                tf = time.time()
+                revise = (triage_note + "\nA reviewer rejected your previous patch: " + "; ".join(rv["concerns"])
+                          + "\nYour previous patch was:\n" + proposal["diff"]
+                          + "\nFix the underlying defect in general, with the smallest possible change.\n")
+                try:
+                    code2, meta2 = fixer.ask(keys, build_prompt(n, before, symptom, logs, revise, hint))
+                    compile(code2, "main.py", "exec")
+                except (RuntimeError, SyntaxError):
+                    log("warn", "Revision failed; keeping the first patch.", n)
+                    break
+                total_tokens += meta2["tokens"]
+                s["tokens"] += meta2["tokens"]
+                steps.append({"agent": "Fixer", "summary": f"Revised the patch after review ({_changed_lines(before, code2)} lines changed).",
+                              "tokens": meta2["tokens"], "seconds": round(time.time() - tf, 1), "model": meta2["model"]})
+                proposal = make_proposal(n, before, code2, f"AI ({meta2['model']}, {meta2['key']} key)",
+                                         total_tokens, "ai", symptom, t0)
+        proposal["tokens"], proposal["agents"], proposal["seconds"] = total_tokens, steps, round(time.time() - t0, 1)
         publish_proposal(n, proposal)
         if auto_approve:
             log("warn", "Auto-approve is on (automation mode): applying without human review.", n)
@@ -296,15 +392,91 @@ def propose_ai(n, auto_approve=False):
         s["fixing"] = False
 
 
+def wait_canary_healthy(n, urls, seconds):
+    end, detail = time.time() + seconds, ""
+    while time.time() < end:
+        time.sleep(1.5)
+        ok, detail, _, _ = probe_once(n, urls)
+        if ok:
+            return True, ""
+    return False, detail
+
+
+def run_canary(n, code):
+    """Try the patch on the canary copy with a share of real traffic. Returns (passed, reason, info).
+
+    The stable service is not touched. The canary must come up healthy, keep passing its health checks while
+    it serves its share of traffic, and (if it saw enough real requests) keep its error rate low."""
+    cfg = settings["canary"]
+    pct, observe = cfg["percent"], cfg["observe_s"]
+    cname, urls = f"{n}-canary", canary.urls_for(n)
+    cfile = RUNTIME / cname / "main.py"
+    base_req, base_err = telemetry.store.counts(cname)
+    info = {"percent": pct, "observe_s": observe, "started": time.time(), "probes_ok": 0, "probes_failed": 0,
+            "requests": 0, "errors": 0, "result": "starting"}
+    set_repair(n, "canary", canary=info)
+    log("info", f"Canary: trying the patch on {cname} first ({pct}% of traffic for {observe}s).", n)
+    reason = ""
+    try:
+        cfile.parent.mkdir(parents=True, exist_ok=True)
+        cfile.write_text(code, encoding="utf-8")
+        ok, detail = wait_canary_healthy(n, urls, VERIFY_TIMEOUT)
+        if not ok:
+            info["result"] = "failed"
+            return False, f"the canary did not become healthy: {detail}", info
+        canary.set_route(n, pct)
+        info["result"] = "observing"
+        log("info", f"Canary is healthy: sending {pct}% of {n} traffic to it.", n)
+        end = time.time() + observe
+        while time.time() < end:
+            time.sleep(2)
+            ok, detail, _, _ = probe_once(n, urls)
+            info["probes_ok" if ok else "probes_failed"] += 1
+            req, err = telemetry.store.counts(cname)
+            info["requests"], info["errors"] = req - base_req, err - base_err
+            if not ok:
+                reason = f"the canary failed a health check: {detail}"
+                break
+        if not reason and info["requests"] >= 5 and 100 * info["errors"] / info["requests"] > 5:
+            reason = f"the canary's error rate was {100 * info['errors'] / info['requests']:.0f}% over {info['requests']} real requests"
+        info["result"] = "failed" if reason else "passed"
+        return (not reason), reason, info
+    finally:
+        canary.set_route(n, 0)  # always close the traffic split
+        try:  # until a patch is promoted the canary mirrors the last healthy code
+            cfile.write_text(svcs[n]["last_good"] or (GOLDEN / n / "main.py").read_text(encoding="utf-8"), encoding="utf-8")
+        except OSError:
+            pass
+
+
 def apply_proposal(n):
-    """Deploy the approved patch, verify it, and roll back to the last known-good version if it fails."""
+    """Deploy the approved patch (via a canary first, if enabled), verify it, and roll back if it fails."""
     s = svcs[n]
     r = s["repair"]
     p = r["proposal"]
     t0 = time.time()
+    title = s["title"]
     good = s["last_good"] or (GOLDEN / n / "main.py").read_text(encoding="utf-8")
     set_repair(n, "approved")
     log("info", "Patch approved. Deploying with verification (compile + health probe).", n)
+    base_patch = {k: v for k, v in p.items() if k not in ("code", "base")}
+    cinfo = None
+
+    if settings["canary"]["enabled"] and n in canary.PORTS:
+        okc, why, cinfo = run_canary(n, p["code"])
+        if not okc:
+            patch = {**base_patch, "canary": cinfo,
+                     "agents": list(p.get("agents", [])) + [{"agent": "Verifier", "tokens": 0, "seconds": round(time.time() - t0, 1),
+                                                           "summary": "Canary failed, so the patch was not promoted."}]}
+            s["last_fix"] = {"how": "canary failed: not promoted", "diff": p["diff"],
+                             "seconds": round(time.time() - t0, 1), "tokens": p["tokens"]}
+            set_repair(n, "canary_failed", proposal=patch, rollback=None, note=why[:300], canary=cinfo)
+            log("err", f"Canary failed: {why[:200]}. The patch was NOT promoted; the running service is unchanged.", n)
+            notifier.notify("canary", n, f"Canary failed for {title}", why[:140])
+            pr_note(n, f"## Canary failed\n\n**Reason:** {why[:300]}\n\nThe patch was not promoted and the running service was not changed.")
+            return
+        log("ok", f"Canary passed ({cinfo['requests']} real requests, {cinfo['probes_ok']} health checks). Promoting.", n)
+
     try:
         compile(p["code"], "main.py", "exec")
         write_live(n, p["code"])
@@ -314,15 +486,25 @@ def apply_proposal(n):
     except SyntaxError as e:
         ok, reason = False, f"patch does not compile: {e.msg}"
     seconds = round(time.time() - t0, 1)
-    patch = {k: v for k, v in p.items() if k not in ("code", "base")}
+    verifier = {"agent": "Verifier", "tokens": 0, "seconds": seconds,
+                "summary": (f"Compiled, deployed and passed the health probe in {seconds}s." if ok
+                            else f"Failed verification ({reason[:120]}); rolled back.")}
+    patch = {**base_patch, "agents": list(p.get("agents", [])) + [verifier]}
+    if cinfo:
+        patch["canary"] = cinfo
 
     if ok:
         s["bug"], s["last_good"] = None, p["code"]
         mark_healthy(n)
+        try:
+            (RUNTIME / f"{n}-canary" / "main.py").write_text(p["code"], encoding="utf-8")  # the twin follows stable
+        except OSError:
+            pass
         s["last_fix"] = {"how": p["how"], "diff": p["diff"], "seconds": round(time.time() - p["created"] + p["seconds"], 1),
                          "tokens": p["tokens"]}
-        set_repair(n, "resolved", proposal=patch, rollback=None)
+        set_repair(n, "resolved", proposal=patch, rollback=None, canary=cinfo)
         log("ok", f"Verified and resolved: {p['how']}, {p['tokens']} tokens.", n)
+        notifier.notify("resolved", n, f"{title} is healthy again", p["how"])
         if gh_state["enabled"]:
             threading.Thread(target=resolve_incident, daemon=True, args=(
                 n, p["code"], p["how"], p["tokens"], s["last_fix"]["seconds"], p["diff"])).start()
@@ -337,11 +519,12 @@ def apply_proposal(n):
         mark_healthy(n)
     s["last_fix"] = {"how": "patch failed verification: rolled back", "diff": p["diff"],
                      "seconds": round(time.time() - t0, 1), "tokens": p["tokens"]}
-    set_repair(n, "rolled_back", proposal=patch,
+    set_repair(n, "rolled_back", proposal=patch, canary=cinfo,
                rollback={"t": time.time(), "reason": reason[:300], "recovered": recovered})
     log("ok" if recovered else "err",
         "Rolled back; the service is healthy again. The incident is NOT marked resolved."
         if recovered else "Rollback did not recover the service. Use Restore known-good.", n)
+    notifier.notify("rolled_back", n, f"{title}: patch rolled back", reason[:140])
     pr_note(n, f"## Patch failed verification and was rolled back\n\n**Reason:** {reason[:300]}\n\n"
                f"The service was restored to its last known-good version "
                f"({'healthy again' if recovered else 'still unhealthy'}). This incident is not resolved.")
@@ -474,6 +657,7 @@ def boot():
     log("info", "Control plane started. All services reset to known-good code.")
     threading.Thread(target=monitor, daemon=True).start()
     threading.Thread(target=metrics_loop, daemon=True).start()
+    threading.Thread(target=traffic.Traffic(settings["traffic"], log).run, daemon=True).start()
 
 
 def get_svc(n):
@@ -492,13 +676,14 @@ def state():
                   "repair": repair_info(s), "tele": tele.get(n)}
                for n, s in svcs.items()]
     github = {"configured": gh.configured, "enabled": gh_state["enabled"], "repo": gh.repo if gh.configured else ""}
-    return {"services": out, "llm": keys.public(), "github": github, "events": list(events)}
+    return {"services": out, "llm": keys.public(), "github": github, "events": list(events),
+            "settings": settings, "mobile": notifier.info()}
 
 
 def repair_info(s):
     r = s["repair"]
     p = r["proposal"]
-    return {"state": r["state"], "rollback": r["rollback"], "note": r["note"],
+    return {"state": r["state"], "rollback": r["rollback"], "note": r["note"], "canary": r.get("canary"),
             "proposal": {k: v for k, v in p.items() if k not in ("code", "base")} if p else None}
 
 
@@ -519,12 +704,20 @@ def break_service(n: str, bug_id: str | None = None, report: bool = True):
         s["last_good"] = code  # the code that is healthy right now is what a failed repair rolls back to
     options = [b for b in BUGS[n] if b["old"] in code and (bug_id is None or b["id"] == bug_id)]
     if not options:
+        # An earlier AI repair may have reworded the code (for example 0.10 -> 0.1) so the fault's text is gone:
+        # fall back to the original known-good code as the base for the fault.
+        original = (GOLDEN / n / "main.py").read_text(encoding="utf-8")
+        options = [b for b in BUGS[n] if b["old"] in original and (bug_id is None or b["id"] == bug_id)]
+        if options:
+            code = original
+    if not options:
         raise HTTPException(404, "no applicable fault")
     bug = random.choice(options)
     broken = code.replace(bug["old"], bug["new"], 1)
     write_live(n, broken)
     clear_log(n)
     s["bug"], s["last_fix"], s["incident"], s["repair"] = bug["id"], None, None, new_repair()
+    s["alerted"], s["wd_tried"], s["bad_cycles"] = False, False, 0  # a new incident: alert and watchdog start fresh
     log("err", f"Fault injected: {bug['title']}.", n)
     if report and gh_state["enabled"]:
         threading.Thread(target=open_incident, args=(n, bug, code, broken), daemon=True).start()
@@ -698,6 +891,136 @@ def trace_logs(trace_id: str):
     return {"by_trace": sorted(by_trace, key=lambda r: r["t"]), "by_time": by_time}
 
 
+@app.post("/api/settings")
+def update_settings(watchdog: bool | None = None, agentic: bool | None = None, canary_enabled: bool | None = None,
+                    canary_percent: int | None = None, canary_observe: int | None = None,
+                    traffic_enabled: bool | None = None):
+    """Switch the watchdog, the agents, canary releases and simulated traffic on or off, and tune the canary."""
+    if traffic_enabled is not None:
+        settings["traffic"]["enabled"] = traffic_enabled
+    if watchdog is not None:
+        settings["watchdog"] = watchdog
+        log("info", f"Watchdog {'on: failures get a proposed fix automatically (still needs your approval)' if watchdog else 'off'}.")
+    if agentic is not None:
+        settings["agentic"] = agentic
+        log("info", f"Agents {'on (triage, fixer, reviewer)' if agentic else 'off (single fixer)'}.")
+    if canary_percent is not None:
+        if not 1 <= canary_percent <= 100:
+            raise HTTPException(400, "canary_percent must be 1-100")
+        settings["canary"]["percent"] = canary_percent
+    if canary_observe is not None:
+        if not 5 <= canary_observe <= 120:
+            raise HTTPException(400, "canary_observe must be 5-120 seconds")
+        settings["canary"]["observe_s"] = canary_observe
+    if canary_enabled is not None:
+        settings["canary"]["enabled"] = canary_enabled
+        log("info", f"Canary releases {'on' if canary_enabled else 'off'} ({settings['canary']['percent']}% of traffic).")
+    return settings
+
+
+class ReviewBody(BaseModel):
+    code: str
+
+
+@app.post("/api/services/{n}/review")
+def review_patch(n: str, body: ReviewBody):
+    """Run just the Reviewer agent on a patch against the service's current code and failing check."""
+    s = get_svc(n)
+    if not keys.live:
+        raise HTTPException(409, "no Groq key configured")
+    before = live_file(n).read_text(encoding="utf-8")
+    try:
+        compile(body.code, "main.py", "exec")
+        return agents.review(keys, n, s["detail"] or "the service is failing its health check", before,
+                             diff(before, body.code, ("main", "patch")))
+    except SyntaxError as e:
+        raise HTTPException(400, f"patch does not compile: {e.msg}")
+    except RuntimeError as e:
+        raise HTTPException(502, str(e)[:200])
+
+
+# ------------------------------------------------------------------- phone (token-protected)
+# The phone app is a small installable web app served at /m/. Its API needs the mobile token, so only /m/ has
+# to be exposed to the phone (for example through Tailscale). The desktop dashboard stays unauthenticated.
+
+def mobile_auth(authorization: str | None = Header(None)):
+    supplied = (authorization or "").removeprefix("Bearer ").strip()
+    if not secrets.compare_digest(supplied.encode(), notifier.token.encode()):
+        raise HTTPException(401, "invalid token")
+
+
+def incident_view(n):
+    s = svcs[n]
+    r = s["repair"]
+    p = r["proposal"]
+    return {"name": n, "title": s["title"], "status": s["status"], "detail": s["detail"][:240], "repair": r["state"],
+            "canary": r.get("canary"), "rollback": r["rollback"], "note": r["note"], "pr": pr_info(s),
+            "proposal": {k: v for k, v in p.items() if k not in ("code", "base")} if p else None}
+
+
+@app.get("/api/mobile/info")
+def mobile_info():
+    return {"token": notifier.token, "public_key": notifier.public_key(), **notifier.info()}
+
+
+@app.get("/m/api/status", dependencies=[Depends(mobile_auth)])
+def m_status():
+    return {"services": [incident_view(n) for n in svcs], "settings": settings,
+            "pending": [n for n, s in svcs.items() if s["repair"]["state"] == "pending_approval"]}
+
+
+@app.get("/m/api/incident/{n}", dependencies=[Depends(mobile_auth)])
+def m_incident(n: str):
+    get_svc(n)
+    return incident_view(n)
+
+
+@app.post("/m/api/approve/{n}", dependencies=[Depends(mobile_auth)])
+def m_approve(n: str):
+    log("info", "Approved from the phone app.", n)
+    return approve(n)
+
+
+@app.post("/m/api/reject/{n}", dependencies=[Depends(mobile_auth)])
+def m_reject(n: str):
+    log("info", "Rejected from the phone app.", n)
+    return reject(n, "rejected from the phone")
+
+
+@app.get("/m/api/notifications", dependencies=[Depends(mobile_auth)])
+def m_notifications():
+    return {"notifications": list(notifier.history)}
+
+
+@app.get("/m/api/push/key", dependencies=[Depends(mobile_auth)])
+def m_push_key():
+    return {"public_key": notifier.public_key()}
+
+
+@app.post("/m/api/push/subscribe", dependencies=[Depends(mobile_auth)])
+async def m_subscribe(request: Request):
+    try:
+        notifier.subscribe(await request.json())
+    except (ValueError, KeyError) as e:
+        raise HTTPException(400, str(e))
+    log("info", f"A phone subscribed to notifications ({notifier.subscribers} device(s)).")
+    return {"subscribers": notifier.subscribers}
+
+
+@app.post("/m/api/push/clear", dependencies=[Depends(mobile_auth)])
+def m_clear():
+    """Disconnect every phone from alerts (the token and keys stay)."""
+    notifier.clear()
+    log("info", "All phones disconnected from alerts.")
+    return {"subscribers": 0}
+
+
+@app.post("/m/api/push/unsubscribe", dependencies=[Depends(mobile_auth)])
+async def m_unsubscribe(request: Request):
+    notifier.unsubscribe((await request.json()).get("endpoint", ""))
+    return {"subscribers": notifier.subscribers}
+
+
 @app.post("/api/github")
 def github_toggle(enabled: bool):
     if enabled and not gh.configured:
@@ -707,9 +1030,35 @@ def github_toggle(enabled: bool):
     return {"enabled": enabled}
 
 
+@app.get("/api/llm/check")
+def llm_check():
+    """A real, tiny model call (a few tokens): proves the keys work right now. Used by the pre-flight check."""
+    if not keys.live:
+        return {"ok": False, "error": "no Groq key configured"}
+    try:
+        _, meta = fixer.ask(keys, "Reply with the single word OK.", system="Reply with one word.", max_tokens=120,
+                            raw=True, models=agents.CHEAP)
+        return {"ok": True, "key": meta["key"], "model": meta["model"], "tokens": meta["tokens"]}
+    except RuntimeError as e:
+        return {"ok": False, "error": str(e)[:200]}
+
+
+@app.get("/api/github/check")
+def github_check():
+    """Proves the GitHub token can reach the repo right now (read-only). Used by the pre-flight check."""
+    if not gh.configured:
+        return {"ok": False, "error": "GITHUB_TOKEN / GITHUB_REPO not set"}
+    try:
+        r = gh._req("GET", f"/repos/{gh.repo}")
+        return {"ok": True, "repo": r.get("full_name"), "default_branch": r.get("default_branch"), "enabled": gh_state["enabled"]}
+    except ghmod.GitHubError as e:
+        return {"ok": False, "error": str(e)[:200]}
+
+
 @app.get("/api/health")
 def health():
     return {"ok": True}
 
 
+app.mount("/m", StaticFiles(directory=Path(__file__).parent / "static" / "m", html=True), name="mobile")
 app.mount("/", StaticFiles(directory=Path(__file__).parent / "static", html=True), name="ui")

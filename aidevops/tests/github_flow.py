@@ -67,7 +67,7 @@ check(wait(lambda: svc("cart")["pr"]["state"] == "closed", 40), "PR closed after
 state = httpx.get(f"{GH}/_state").json()
 p = state["prs"][str(pr["number"])]
 fixed = list(state["branches"][p["head"]].values())[0][0]
-check("total * 10" not in fixed and "0.10" in fixed, "fix committed to the branch")
+check("total * 10" not in fixed and ("0.10" in fixed or "0.1," in fixed or "0.1)" in fixed), "fix committed to the branch")
 check(p["state"] == "closed" and any("Resolved" in x for x in p["comments"]), "PR has a Resolved comment and is closed")
 
 # reporting off: no PR

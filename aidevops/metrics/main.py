@@ -24,7 +24,10 @@ def read(stats: dict) -> dict:
     cores = cpu.get("online_cpus") or len(cpu["cpu_usage"].get("percpu_usage") or []) or 1
     pct = cpu_delta / sys_delta * cores * 100 if sys_delta > 0 and cpu_delta >= 0 else 0.0
     sub = mem.get("stats", {})
-    used = mem.get("usage", 0) - sub.get("inactive_file", sub.get("total_inactive_file", 0))
+    usage = mem.get("usage")
+    if usage is None:  # rootless Podman (WSL) gives no memory data: say so instead of reporting 0 MB
+        return {"cpu": round(pct, 1), "mem_mb": None}
+    used = usage - sub.get("inactive_file", sub.get("total_inactive_file", 0))
     return {"cpu": round(pct, 1), "mem_mb": round(used / 1048576, 1)}
 
 

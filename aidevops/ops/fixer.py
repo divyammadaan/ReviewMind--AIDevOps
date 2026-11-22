@@ -43,7 +43,8 @@ def _strip_fences(text: str) -> str:
     return (m.group(1) if m else text).strip() + "\n"
 
 
-def ask(keys: Keys, user_prompt: str, system: str = SYSTEM, max_tokens: int = 2500, raw: bool = False):
+def ask(keys: Keys, user_prompt: str, system: str = SYSTEM, max_tokens: int = 2500, raw: bool = False,
+        models: list | None = None):
     """Return (text, meta). Raises RuntimeError if every key/model combination failed.
 
     Code replies have markdown fences stripped; pass raw=True for prose.
@@ -52,7 +53,7 @@ def ask(keys: Keys, user_prompt: str, system: str = SYSTEM, max_tokens: int = 25
     errors = []
     for label, key in keys.keys:
         client = Groq(api_key=key)
-        for model in keys.models:
+        for model in (models or keys.models):
             kwargs = dict(model=model, temperature=0, max_tokens=max_tokens,
                           messages=[{"role": "system", "content": system},
                                     {"role": "user", "content": user_prompt}])

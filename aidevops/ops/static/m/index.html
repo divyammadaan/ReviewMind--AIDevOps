@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0d14">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>AIDevOps</title>
+<style>
+  :root{--bg:#0b0d14;--panel:#12151f;--line:#242a3b;--ink:#e8ebf4;--muted:#8a93ab;--ok:#22c55e;--bad:#ef4444;--warn:#f59e0b;--info:#60a5fa;--brand:#14b8a6}
+  *{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding-bottom:env(safe-area-inset-bottom)}
+  header{position:sticky;top:0;z-index:5;background:#0b0d14ee;backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;align-items:center;gap:10px}
+  header h1{font-size:17px;margin:0;flex:1}header small{color:var(--muted);display:block;font-weight:400;font-size:12px}
+  main{padding:14px 16px 40px;max-width:640px;margin:0 auto}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:22px 0 8px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+  .row{display:flex;align-items:center;gap:10px}.grow{flex:1;min-width:0}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--muted);flex:none}
+  .healthy .dot{background:var(--ok)}.broken .dot,.down .dot{background:var(--bad)}.blocked .dot{background:var(--warn)}.fixing .dot,.restarting .dot{background:var(--info)}
+  .name{font-weight:600}.sub{color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+  .pill{font-size:11px;font-weight:700;text-transform:uppercase;border-radius:999px;padding:2px 8px;border:1px solid var(--line);color:var(--muted)}
+  .pill.warn{color:var(--warn);border-color:#5a4412}.pill.ok{color:var(--ok);border-color:#1d4a2c}.pill.bad{color:var(--bad);border-color:#5b2327}.pill.info{color:var(--info);border-color:#25406b}
+  button,input{font:inherit;border-radius:12px;border:1px solid var(--line);background:#1a1f2e;color:var(--ink);padding:12px 16px}
+  button{cursor:pointer;font-weight:600}button:active{transform:scale(.98)}
+  button.ok{background:#12301f;border-color:#1d4a2c;color:#86efac}button.no{background:#321518;border-color:#5b2327;color:#fca5a5}
+  button.go{background:var(--brand);border-color:var(--brand);color:#04201c}
+  button:disabled{opacity:.4}.btns{display:flex;gap:10px;margin-top:12px}.btns button{flex:1}
+  pre{margin:10px 0 0;background:#0d1019;border:1px solid var(--line);border-radius:10px;padding:10px;overflow:auto;max-height:220px;font:12px/1.5 ui-monospace,Consolas,monospace}
+  .add{color:#86efac}.del{color:#fca5a5}.hunk{color:var(--info)}
+  .step{font-size:13px;color:var(--muted);margin-top:6px}.step b{color:var(--ink)}
+  .note{color:var(--muted);font-size:13px;margin:6px 0}
+  #login{max-width:420px;margin:12vh auto;padding:0 20px}#login input{width:100%;margin:10px 0 12px}
+  .hidden{display:none}.err{color:var(--bad);font-size:13px;min-height:18px}
+  .alert{display:grid;grid-template-columns:54px 1fr;gap:8px;font-size:13px;padding:8px 0;border-top:1px solid var(--line)}.alert time{color:var(--muted)}
+</style>
+</head>
+<body>
+<section id="login" class="hidden">
+  <h1>AIDevOps</h1>
+  <p class="note">Approve or reject AI fixes from your phone. Enter the access token shown on the control-plane dashboard (Phone panel).</p>
+  <input id="tok" type="password" placeholder="Access token" autocomplete="off">
+  <button class="go" id="save" style="width:100%">Connect</button>
+  <div class="err" id="lerr"></div>
+</section>
+
+<div id="app" class="hidden">
+  <header>
+    <h1>AIDevOps <small id="sum">connecting…</small></h1>
+    <button id="alertsBtn" class="go">Enable alerts</button>
+  </header>
+  <main>
+    <div id="hint" class="note"></div>
+    <h2>Needs your approval</h2><div id="pending"></div>
+    <h2>Services</h2><div id="services"></div>
+    <h2>Recent alerts</h2><div class="card" id="alerts"></div>
+    <div class="btns"><button id="out">Disconnect this phone</button></div>
+  </main>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;"}[c]));
+let TOKEN = ""; try { TOKEN = localStorage.getItem("aidevops_token") || ""; } catch {}
+let armed = null;  // two-tap confirmation for approve/reject, instead of a browser dialog
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, {...opts, headers: {...(opts.headers || {}), Authorization: "Bearer " + TOKEN, "Content-Type": "application/json"}});
+  if (r.status === 401) { showLogin("That token was not accepted."); throw new Error("401"); }
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.detail || ("HTTP " + r.status));
+  return data;
+}
+function showLogin(msg) { $("app").classList.add("hidden"); $("login").classList.remove("hidden"); $("lerr").textContent = msg || ""; }
+$("save").onclick = async () => {
+  TOKEN = $("tok").value.trim();
+  try { await api("/m/api/status"); try { localStorage.setItem("aidevops_token", TOKEN); } catch {} start(); } catch (e) { if (e.message !== "401") $("lerr").textContent = "Could not reach the server."; }
+};
+$("out").onclick = async () => {
+  try { const reg = await navigator.serviceWorker.getRegistration(); const sub = reg && await reg.pushManager.getSubscription();
+    if (sub) { await api("/m/api/push/unsubscribe", {method: "POST", body: JSON.stringify({endpoint: sub.endpoint})}); await sub.unsubscribe(); } } catch {}
+  try { localStorage.removeItem("aidevops_token"); } catch {}
+  TOKEN = ""; showLogin("");
+};
+
+const LAB = {pending_approval: ["Needs approval", "warn"], approved: ["Deploying", "info"], canary: ["Canary", "info"], resolved: ["Resolved", "ok"],
+  rejected: ["Rejected", ""], rolled_back: ["Rolled back", "bad"], canary_failed: ["Canary failed", "bad"], generating: ["Preparing a fix", "info"], failed: ["Fix failed", "bad"]};
+const diffHtml = d => esc(d).split("\n").map(l => l.startsWith("+") && !l.startsWith("+++") ? `<span class="add">${l}</span>` :
+  l.startsWith("-") && !l.startsWith("---") ? `<span class="del">${l}</span>` : l.startsWith("@@") ? `<span class="hunk">${l}</span>` : l).join("\n");
+const ago = t => new Date(t * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
+
+async function act(kind, svc) {
+  const key = kind + svc;
+  if (armed !== key) { armed = key; refresh(); setTimeout(() => { if (armed === key) { armed = null; refresh(); } }, 6000); return; }
+  armed = null;
+  try { await api(`/m/api/${kind}/${svc}`, {method: "POST"}); } catch (e) { $("hint").textContent = e.message; }
+  refresh();
+}
+window.act = act;
+
+function renderPending(list) {
+  $("pending").innerHTML = list.length ? list.map(s => {
+    const p = s.proposal, steps = (p.agents || []).map(a => `<div class="step"><b>${esc(a.agent)}</b>: ${esc(a.summary)}</div>`).join("");
+    const ap = armed === "approve" + s.name, rj = armed === "reject" + s.name;
+    return `<div class="card" id="${s.name}"><div class="row"><span class="name grow">${esc(s.title)}</span><span class="pill warn">needs approval</span></div>
+      <div class="sub">${esc(s.detail || p.symptom || "")}</div><div class="sub" style="margin-top:6px">${esc(p.how)} · ${p.tokens} tokens</div>${steps}
+      <pre>${diffHtml(p.diff)}</pre><div class="note">Nothing has been applied yet.</div>
+      <div class="btns"><button class="no" onclick="act('reject','${s.name}')">${rj ? "Tap again to reject" : "Reject"}</button>
+      <button class="ok" onclick="act('approve','${s.name}')">${ap ? "Tap again to approve" : "Approve & apply"}</button></div></div>`;
+  }).join("") : `<div class="card sub">Nothing is waiting for you.</div>`;
+}
+
+async function refresh() {
+  let st, al;
+  try { st = await api("/m/api/status"); al = await api("/m/api/notifications"); } catch { $("sum").textContent = "offline"; return; }
+  const bad = st.services.filter(s => ["broken", "down"].includes(s.status)).length;
+  $("sum").textContent = st.pending.length ? `${st.pending.length} fix(es) need approval` : bad ? `${bad} service(s) failing` : "all services healthy";
+  renderPending(st.services.filter(s => s.repair === "pending_approval" && s.proposal));
+  $("services").innerHTML = st.services.map(s => {
+    const lab = LAB[s.repair]; const c = s.canary && s.repair === "canary" ? ` · ${s.canary.percent}% of traffic` : "";
+    return `<div class="card ${s.status}" onclick="location.hash='${s.name}'"><div class="row"><span class="dot"></span><span class="name grow">${esc(s.title)}</span>
+      ${lab ? `<span class="pill ${lab[1]}">${lab[0]}${c}</span>` : `<span class="pill">${esc(s.status)}</span>`}</div>
+      ${s.detail ? `<div class="sub" style="margin-top:6px">${esc(s.detail)}</div>` : ""}</div>`;
+  }).join("");
+  $("alerts").innerHTML = al.notifications.length ? al.notifications.slice(0, 12).map(n =>
+    `<div class="alert"><time>${ago(n.t)}</time><div><b>${esc(n.title)}</b><div class="sub">${esc(n.body)}</div></div></div>`).join("") : `<div class="sub">No alerts yet.</div>`;
+}
+
+// ---- push notifications (Web Push) ------------------------------------------------------------------
+const b64 = s => { const p = "=".repeat((4 - s.length % 4) % 4), r = atob((s + p).replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from([...r].map(c => c.charCodeAt(0))); };
+async function enableAlerts() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) { $("hint").textContent = "This browser cannot do push notifications. Use Chrome on Android over HTTPS."; return; }
+  const reg = await navigator.serviceWorker.register("sw.js", {scope: "./"});
+  if ((await Notification.requestPermission()) !== "granted") { $("hint").textContent = "Notifications were blocked. Allow them for this site in the browser settings."; return; }
+  const key = (await api("/m/api/push/key")).public_key;
+  const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: b64(key)});
+  await api("/m/api/push/subscribe", {method: "POST", body: JSON.stringify(sub.toJSON())});
+  $("alertsBtn").textContent = "Alerts on ✓"; $("alertsBtn").disabled = true; $("hint").textContent = "";
+}
+$("alertsBtn").onclick = () => enableAlerts().catch(e => { $("hint").textContent = "Could not enable alerts: " + e.message; });
+
+async function start() {
+  $("login").classList.add("hidden"); $("app").classList.remove("hidden");
+  refresh(); setInterval(() => { if (!document.hidden) refresh(); }, 5000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+  try {
+    const reg = await navigator.serviceWorker.register("sw.js", {scope: "./"});
+    const sub = await reg.pushManager.getSubscription();
+    if (sub && Notification.permission === "granted") { await api("/m/api/push/subscribe", {method: "POST", body: JSON.stringify(sub.toJSON())}); $("alertsBtn").textContent = "Alerts on ✓"; $("alertsBtn").disabled = true; }
+  } catch {}
+  if (!window.isSecureContext) $("hint").textContent = "This page is not on HTTPS, so alerts and installing will not work. See the README (Phone app).";
+}
+if (TOKEN) api("/m/api/status").then(start).catch(() => {}); else showLogin("");
+</script>
+</body>
+</html>

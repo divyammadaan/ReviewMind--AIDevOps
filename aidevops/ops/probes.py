@@ -27,16 +27,17 @@ def _ok(r, what):
     return r.json()
 
 
-def _restore_stock(before):
+def _restore_stock(before, U=None):
     """Put back whatever a probe reserved, so probing never drains the shop."""
-    u = URL["inventory"]
+    u = (U or URL)["inventory"]
     now = httpx.get(f"{u}/stock/1", timeout=T)
     if now.status_code == 200 and now.json()["in_stock"] < before:
         httpx.post(f"{u}/restock", json={"product_id": 1, "qty": before - now.json()["in_stock"]}, timeout=T)
 
 
-def catalog():
-    u = URL["catalog"]
+def catalog(U=None):
+    U = U or URL
+    u = U["catalog"]
     items = _ok(httpx.get(f"{u}/products", timeout=T), "GET /products")
     check(len(items) == 6, f"GET /products expected 6 products, got {len(items)}")
     one = _ok(httpx.get(f"{u}/products/1", timeout=T), "GET /products/1")
@@ -45,8 +46,9 @@ def catalog():
           "GET /products/999 expected HTTP 404")
 
 
-def inventory():
-    u = URL["inventory"]
+def inventory(U=None):
+    U = U or URL
+    u = U["inventory"]
     before = _ok(httpx.get(f"{u}/stock/1", timeout=T), "GET /stock/1")["in_stock"]
     over = httpx.post(f"{u}/reserve", json={"product_id": 1, "qty": 10**6}, timeout=T)
     check(over.status_code == 409,
@@ -57,11 +59,12 @@ def inventory():
         check(res["remaining"] == before - 2,
               f"after reserving 2 of {before}, remaining expected {before - 2}, got {res['remaining']}")
     finally:
-        _restore_stock(before)
+        _restore_stock(before, U)
 
 
-def cart():
-    u = URL["cart"]
+def cart(U=None):
+    U = U or URL
+    u = U["cart"]
     httpx.delete(f"{u}/cart/probe-cart", timeout=T)
     try:
         for _ in range(2):
@@ -78,8 +81,9 @@ def cart():
         httpx.delete(f"{u}/cart/probe-cart", timeout=T)
 
 
-def payments():
-    u = URL["payments"]
+def payments(U=None):
+    U = U or URL
+    u = U["payments"]
     # Try several amounts and report every one that fails, so the symptom shows the pattern
     # and not just a single example that a repair could be tailored to.
     got = {}
@@ -95,19 +99,20 @@ def payments():
     check(zero.status_code == 400, f"charge of 0 expected HTTP 400, got {zero.status_code}")
 
 
-def orders():
-    u = URL["orders"]
-    before = httpx.get(f"{URL['inventory']}/stock/1", timeout=T).json()["in_stock"]
-    httpx.delete(f"{URL['cart']}/cart/probe-order", timeout=T)
+def orders(U=None):
+    U = U or URL
+    u = U["orders"]
+    before = httpx.get(f"{U['inventory']}/stock/1", timeout=T).json()["in_stock"]
+    httpx.delete(f"{U['cart']}/cart/probe-order", timeout=T)
     try:
-        _ok(httpx.post(f"{URL['cart']}/cart/probe-order/add", json={"product_id": 1, "qty": 2}, timeout=T),
+        _ok(httpx.post(f"{U['cart']}/cart/probe-order/add", json={"product_id": 1, "qty": 2}, timeout=T),
             "setup: add to cart")
         o = _ok(httpx.post(f"{u}/checkout/probe-order", timeout=T), "POST /checkout/probe-order")
         check(o["status"] == "confirmed", f"order status expected 'confirmed', got '{o['status']}'")
         check(abs(o["total"] - 5398.2) < 0.01,
               f"order total expected 5398.2 (discounted), got {o['total']}")
     finally:
-        _restore_stock(before)
+        _restore_stock(before, U)
 
 
 def gateway():

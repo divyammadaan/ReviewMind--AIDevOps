@@ -941,7 +941,7 @@ def review_patch(n: str, body: ReviewBody):
 
 # ------------------------------------------------------------------- phone (token-protected)
 # The phone app is a small installable web app served at /m/. Its API needs the mobile token, so only /m/ has
-# to be exposed to the phone (for example through Tailscale). The desktop dashboard stays unauthenticated.
+# to be exposed to the phone. The desktop dashboard stays unauthenticated.
 
 def mobile_auth(authorization: str | None = Header(None)):
     supplied = (authorization or "").removeprefix("Bearer ").strip()

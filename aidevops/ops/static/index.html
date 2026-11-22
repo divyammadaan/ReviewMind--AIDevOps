@@ -340,10 +340,10 @@ async function loadPhone() {
   let m;
   try { m = await (await fetch("/api/mobile/info")).json(); } catch { return; }
   $("phoneMeta").textContent = `${m.subscribers} phone(s) subscribed to alerts · ${m.sent} sent · ${m.failed} failed`;
-  $("phone").innerHTML = `<div style="font-size:13px">Install a small web app on your Android phone to get alerts and approve or reject AI fixes.
-    <ol><li>Make this machine reachable from the phone over HTTPS (README, "Phone app": Tailscale does it in two commands).</li>
-    <li>On the phone, open <code>https://&lt;your-machine&gt;.ts.net/m/</code> in Chrome and enter the token below.</li>
-    <li>Tap <b>Enable alerts</b>, then Chrome's menu → <b>Add to Home screen</b>.</li></ol>
+  $("phone").innerHTML = `<div style="font-size:13px">Install the ReviewMind Ops Android app (<code>android/dist/ReviewMindOps.apk</code>) to get alerts and approve or reject AI fixes.
+    <ol><li>Put the phone on the same Wi-Fi as this machine.</li>
+    <li>In the app, enter this machine's address (<code>http://&lt;ip&gt;:9000</code>) and the token below.</li>
+    <li>Allow notifications. Alerts keep arriving with the app closed.</li></ol>
     Access token: <code>${esc(m.token)}</code> &nbsp; Local test page: <a href="/m/" target="_blank" style="color:var(--info)">/m/</a>
     ${m.last_error ? `<div style="color:var(--warn);margin-top:6px">Last push problem: ${esc(m.last_error)}</div>` : ""}</div>`;
 }

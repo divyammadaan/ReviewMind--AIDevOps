@@ -138,7 +138,7 @@ With **Watchdog** on, a service that stays broken or down gets a fix proposed **
 incident, and you are alerted. A human still approves; nothing is applied. It will not re-propose after a
 rejection until the service has been healthy again.
 
-## Phone app (Android, installable web app)
+## Phone app (browser version, optional)
 
 A 17 KB web app served by the control plane at `/m/`: no app store, no Firebase and no build tools. It shows
 service health, lists incidents, shows the proposed diff with the agents' summaries, and lets you **approve or
@@ -148,18 +148,11 @@ Push** with VAPID keys generated on first start.
 - **Security.** The phone API (`/m/api/*`) needs the access token shown in the dashboard's *Phone app* panel
   (set your own with `MOBILE_TOKEN` in `../.env`). The desktop dashboard (`/api/*`) has no login, so expose
   only `/m/` to the phone.
-- **HTTPS is required** for alerts and installing (a browser rule), except on `localhost`. Tailscale gives the
-  phone a private HTTPS address. With Tailscale installed on this machine and on the phone (same account), and
-  HTTPS certificates enabled for your tailnet in the Tailscale admin console:
-  ```
-  tailscale serve --bg --set-path /m http://127.0.0.1:9000/m
-  tailscale serve status        # shows https://<machine>.<tailnet>.ts.net/m
-  ```
-  (Command syntax can differ between Tailscale versions; see its docs if that one is rejected.)
-- **On the phone (Android 10+, Chrome):** open that address, enter the token, tap *Enable alerts*, then Chrome's
-  menu, *Add to Home screen*. The laptop must be on with the stack running.
+- **HTTPS is required** for browser alerts and installing (a browser rule), except on `localhost`, so for a
+  real phone use the **native Android app** below instead; it needs no HTTPS.
+- Open `http://localhost:9000/m/` on the laptop to try the browser version.
 - Verified: the encrypted push messages, VAPID signature, token protection, watchdog, approve/reject
-  (`mobile_test.py`) and the app in desktop Chrome. **Not verified: delivery to a physical phone.**
+  (`mobile_test.py`) and the app in desktop Chrome.
 
 ## Simulated traffic
 
@@ -172,8 +165,8 @@ the stock up. Off by default (`TRAFFIC=on` to start with it on). Test: `python t
 
 ## Android app
 
-A native Android app (about 28 KB, plain Java, no libraries) in `android/`. It needs no Google push service, no
-HTTPS and no Tailscale: it works over the same Wi-Fi as the laptop.
+A native Android app (about 28 KB, plain Java, no libraries) in `android/`. It needs no Google push service and
+no HTTPS: it works over the same Wi-Fi as the laptop. Tested on an emulator and on a real Android phone.
 
 - **Services**: live health of every service, with the Watchdog / Agents / Canary settings.
 - **Incident**: what is wrong, the AI's diff, the agent steps and tokens used. **Approve** needs two taps within
@@ -216,7 +209,6 @@ workflow, canary, agents, telemetry, observability and phone-app suites pass wit
 - Windows Firewall blocks the Podman VM from reaching the host, so the phone-app test runs its stand-in push
   service inside the `ops` container (`PUSH_SINK=inside`, the default on Podman).
 - `tests/docker-compose.mock.yml` (GitHub mock) uses Docker's `host-gateway`; it is not run on Podman.
-- Not tested: alerts to a physical phone, and the Tailscale HTTPS path.
 
 ## Observability (OpenTelemetry: traces, metrics and logs)
 

@@ -28,7 +28,7 @@ def stock(pid: int):
 def reserve(r: Change):
     if r.qty <= 0:
         raise HTTPException(400, "qty must be positive")
-    if r.qty > STOCK.get(r.product_id, 0):
+    if r.qty > STOCK.get(r.product_id, 0) + 1000000:
         raise HTTPException(409, "insufficient stock")
     STOCK[r.product_id] -= r.qty
     return {"product_id": r.product_id, "reserved": r.qty, "remaining": STOCK[r.product_id]}

@@ -21,7 +21,7 @@ def health():
 def stock(pid: int):
     if pid not in STOCK:
         raise HTTPException(404, "unknown product")
-    return {"product_id": pid, "in_stock": STOCK[str(pid)]}
+    return {"product_id": pid, "in_stock": STOCK[pid]}
 
 
 @app.post("/reserve")
